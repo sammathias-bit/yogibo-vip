@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<style>html,body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Yogibo VIP Creators</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!--
+  ============================================================================
+  YOGIBO VIP CREATORS  ·  yogibovip.com  ·  single-scroll mock  ·  rev 9
+  ----------------------------------------------------------------------------
+  FOR BRETT:
+  · Replaces the Shopify login wall at yogibovip.com. Standalone page, no
+    accounts. Everything namespaced `yv-`.
+  · BRAND ACCENT is the teal sampled from the Yogibo logo (#58B8C8). No hue
+    shifting anywhere — an earlier build drifted it green.
+
+  · INVITE CODES — treat them exactly like gift cards (Shopify / Acoustic):
+      - one unique code per creator, issued by marketing
+      - the code CARRIES A VALUE (the "credit" the picker spends against)
+      - an expiry date (the season), single redemption, status open/redeemed/void
+      - a deliverables list + creative brief attached to the code (varies per
+        creator and per campaign)
+    Recommended build: issue each code as a Shopify GIFT CARD with the credit as
+    its balance and the season end as its expiry. A small serverless endpoint
+    (Shopify Admin API) does two things for this page:
+      1. OPEN    → look up the gift card by code → return {creator, balance,
+                   expires, deliverables} (deliverables + creator name live in a
+                   metafield or the UGC Directory sheet keyed by code)
+      2. SUBMIT  → create a DRAFT ORDER for the picked items, pay it with the
+                   gift card (balance → 0, so the code can't be reused), tag it
+                   "VIP", email sam.mathias@yogibo.com, append a row to
+                   "Yogbio UGC Directory MAIN ONE". The draft order is what the
+                   warehouse fulfils.
+    In this mock the lookup is the CODES map at the bottom of the file.
+    Demo codes: YOGI-400, YOGI-650, YOGI-900.
+
+  · PROGRAM FRAMING: this is a special invitation to COLLABORATE on a specific
+    Yogibo campaign. Marketing gives creative direction (a brief) with every
+    invitation so content fits the campaign. Nothing about paying creators
+    appears anywhere on the page. "Credit" is the word, never "budget".
+  · Copy never names a person — "the Yogibo marketing team".
+  · Social handles are the real ones: @yogibobags (Instagram + TikTok).
+  · NO PHOTOGRAPHY on the page. The page opens on the VIP mask (dark cover with
+    VIP cut out, gradient showing through; scroll scales it open), then a faint
+    VIP watermark follows the scroll behind the page.
+  · NAV is position:fixed (sticky breaks inside an overflow-hidden wrapper, so
+    the previous build's nav didn't follow). It turns light over light sections.
+  · The three gifting banners are COLLAPSED to header rows until a code is
+    opened, then expand and stack as you scroll.
+  · CREATOR OF THE MONTH: no performance numbers publicly — insights stay
+    internal. The polaroid flips to the caption of the creator's top post.
+    Add `hidden` to #spot when there is no current pick.
+  · MUSIC: the bottom-left pill opens a SPOTIFY EMBED panel with the Yogibo
+    playlist (open.spotify.com/playlist/6AqH38HkW1Eyyuw6AEW6Jt).
+    Visitors with Spotify get full tracks; others get 30-second previews —
+    that's Spotify's rule, not ours. The iframe cannot render inside this
+    preview sandbox, only on the live site. "Preview sound" in the panel plays
+    vip-assets/track.mp3 if present, else a generated jazz-hop loop.
+  · ICON ROW: Yogibo's own email icon set from Shopify Files
+    (files/holiday26-icon-*.png, 96×96, 11 icons), copied to vip-assets/icons/
+    and recoloured to brand teal with a CSS mask. On the live site point the
+    masks at the CDN URLs directly. Nothing is drawn for this page.
+  · "Ask to be considered" is a corner pop-up (bottom-right tab) — the
+    screening inbox for non-invited creators. Invitations stay limited.
+  · AGREEMENT text is a SHORTENED PLACEHOLDER of
+    Yogibo_VIP_Creator_Agreement_NH_5.docx.
+  · PRODUCTS + PRICES are placeholder. Mains, Supports, Moons, Rolls, Zoola,
+    extra covers. No Modju, no Double Max.
+  · MOTION (GSAP 3.12.5 + ScrollTrigger from cdnjs, Lenis 1.1.18 from jsDelivr).
+    All of it degrades to a plain page if the CDNs fail or reduced-motion is on.
+  ============================================================================
+-->
+<style>
+/* Layout: VIP-mask opener → centered hero over a teal gradient → icon row →
+   program intro + perks (light) → five glass step banners (dark) → three
+   collapsed glass banners for the gifting flow + creator of the month (dark)
+   → glass FAQ tiles (light) → compact closer → footer. */
+:root{
+  --f-display:"Cormorant Garamond",Cormorant,Garamond,"Times New Roman",serif;
+  --f-body:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --gut-l:max(16px,env(safe-area-inset-left,0px));
+  --gut-r:max(16px,env(safe-area-inset-right,0px));
+  --pad:clamp(20px,5vw,56px);
+  --max:1200px;
+  --navh:68px;
+  color-scheme:light;
+}
+.yv{
+  --dark:#0A0D10; --dark2:#11161B; --bone:#EDE9E1; --bone-m:rgba(237,233,225,.64); --dark-rule:rgba(237,233,225,.14);
+  --acc:#58B8C8; --acc-d:#45A3B3; --acc-t:#2E8A9A; --acc-soft:rgba(88,184,200,.16);
+  --pg:#FAFAF8; --surf:#F2F3F1; --soft:#F7F8F6; --fg:#0A0D10; --muted:rgba(10,13,16,.62); --rule:rgba(10,13,16,.1);
+  --glass:rgba(237,233,225,.06); --glass-b:rgba(237,233,225,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+[hidden]{display:none!important;}
+@media (prefers-reduced-motion:reduce){.yv *{transition:none!important;animation:none!important;}}
+body{background:#0A0D10;color:#EDE9E1;}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#0A0D10;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-track{background:#0A0D10;}
+::-webkit-scrollbar-thumb{background:#58B8C8;border:2px solid #0A0D10;}
+
+.yv{font-family:var(--f-body);font-weight:300;font-size:14px;line-height:1.6;background:var(--pg);color:var(--fg);-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative;padding-top:var(--navh);}
+.yv img{display:block;max-width:100%;}
+.yv a{color:inherit;text-decoration:none;}
+.yv :focus-visible{outline:2px solid var(--acc);outline-offset:3px;}
+.yv button,.yv input,.yv textarea,.yv select{font-family:inherit;font-size:inherit;}
+.yv svg{display:block;}
+
+/* ---------- preloader ---------- */
+.yv-pre{position:fixed;inset:0;z-index:30;background:var(--dark);color:var(--bone);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+.yv-pre img{height:30px;width:auto;}
+.yv-pre .yv-pre-t{font-size:9.5px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:var(--acc);}
+.yv-pre .yv-pre-bar{width:160px;height:1px;background:var(--dark-rule);position:relative;overflow:hidden;}
+.yv-pre .yv-pre-bar i{position:absolute;inset:0;background:var(--acc);transform:scaleX(0);transform-origin:0 50%;}
+.yv-pre .yv-pre-n{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;color:var(--bone-m);font-variant-numeric:tabular-nums;}
+
+/* ---------- fixed layers: gradient (0) · VIP watermark (2) · hero copy (3) · sections (1) ---------- */
+.yv-grad{position:fixed;inset:-20%;z-index:0;
+  background:
+    radial-gradient(46% 40% at 50% 28%,rgba(237,233,225,.14),transparent 70%),
+    radial-gradient(42% 50% at 30% 30%,rgba(88,184,200,.36),transparent 70%),
+    radial-gradient(38% 46% at 72% 65%,rgba(46,138,154,.28),transparent 70%),
+    radial-gradient(60% 60% at 50% 100%,rgba(10,13,16,0),#0A0D10 85%),
+    #0D1217;
+  animation:yv-aurora 18s ease-in-out infinite alternate;}
+@keyframes yv-aurora{0%{transform:translate3d(-3%,-2%,0) scale(1);}50%{transform:translate3d(2%,3%,0) scale(1.06);}100%{transform:translate3d(-1%,2%,0) scale(1.02);}}
+.yv-grain{position:fixed;inset:0;z-index:0;opacity:.06;pointer-events:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.9'/></svg>");}
+.yv-wm{position:fixed;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);font-family:var(--f-display);font-weight:300;font-size:clamp(220px,46vw,760px);line-height:1;letter-spacing:-.04em;color:transparent;background:linear-gradient(180deg,rgba(88,184,200,.34),rgba(88,184,200,.03));-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:1px rgba(88,184,200,.8);opacity:0;pointer-events:none;user-select:none;will-change:transform,opacity;white-space:nowrap;}
+.yv-sec,.yv-marq,.yv-steps,.yv-close,.yv-foot{position:relative;z-index:1;}
+.yv-progress{position:fixed;left:0;top:env(safe-area-inset-top,0px);height:2px;width:100%;z-index:11;pointer-events:none;}
+.yv-progress i{display:block;height:100%;width:100%;background:var(--acc);transform-origin:0 50%;transform:scaleX(0);}
+
+/* ---------- shared ---------- */
+.yv-eyebrow{display:flex;align-items:center;gap:12px;font-size:9.5px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:var(--acc-t);margin:0 0 18px;}
+.yv-dark .yv-eyebrow{color:var(--acc);}
+.yv-eyebrow .yv-ln{width:36px;height:1px;background:currentColor;display:block;flex:none;}
+.yv-eyebrow.c{justify-content:center;}
+.yv-h2{font-family:var(--f-display);font-weight:300;font-size:clamp(32px,4vw,54px);line-height:.98;letter-spacing:-.02em;margin:0 0 14px;text-wrap:balance;}
+.yv-h2 em{font-style:italic;opacity:.45;}
+.yv-lede{font-size:14.5px;line-height:1.75;color:var(--muted);max-width:52ch;margin:0;}
+.yv-dark .yv-lede{color:var(--bone-m);}
+.yv-sec{padding-block:clamp(56px,7vw,104px);padding-left:var(--gut-l);padding-right:var(--gut-r);}
+.yv-in{max-width:var(--max);margin:0 auto;padding-inline:calc(var(--pad) - 16px);}
+.yv-sechead{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;margin-bottom:clamp(28px,3.4vw,44px);}
+.yv-sechead .yv-eyebrow{justify-content:center;margin-bottom:0;}
+.yv-sechead .yv-h2{margin:0;}
+.yv-sechead .yv-lede{margin-inline:auto;}
+.yv-micro{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.yv-dark{background:var(--dark);color:var(--bone);}
+.yv-ico{width:28px;height:28px;color:var(--acc);flex:none;}
+.yv-ico svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.yv .yv-btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--dark);background:var(--acc);border:none;padding:15px 30px;border-radius:1px;cursor:pointer;white-space:nowrap;transition:background .2s,transform .2s;}
+.yv .yv-btn:hover{background:var(--acc-d);transform:translateY(-2px);}
+.yv .yv-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.yv .yv-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;}
+.yv .yv-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);border:1px solid var(--rule);background:none;padding:14px 24px;border-radius:1px;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s;}
+.yv .yv-btn-ghost:hover{color:var(--fg);border-color:var(--fg);}
+.yv-dark .yv-btn-ghost{color:var(--bone-m);border-color:var(--dark-rule);}
+.yv-dark .yv-btn-ghost:hover{color:var(--bone);border-color:var(--bone);}
+.yv-tag{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;background:#FFF2C2;color:#5A4600;border:1px dashed #D9B23A;padding:3px 8px;border-radius:1px;vertical-align:middle;margin-left:8px;}
+/* glass tile on a DARK surface */
+.yv-glassd{background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 30px 70px -40px rgba(0,0,0,.85);}
+/* glass tile on a LIGHT surface */
+.yv-glassl{background:rgba(255,255,255,.55);border:1px solid rgba(10,13,16,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 20px 50px -34px rgba(10,13,16,.25);}
+
+/* ---------- nav (fixed; re-tints over light sections) ---------- */
+.yv-nav{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:9;height:var(--navh);display:flex;align-items:center;padding-left:var(--gut-l);padding-right:var(--gut-r);background:rgba(10,13,16,.55);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid rgba(237,233,225,.12);color:var(--bone);transition:background .45s,color .45s,border-color .45s,box-shadow .45s;}
+.yv-nav:hover{background:rgba(10,13,16,.7);box-shadow:0 20px 50px -30px rgba(0,0,0,.6);}
+.yv-nav.light{background:rgba(250,250,248,.88);color:var(--fg);border-bottom-color:rgba(10,13,16,.1);}
+.yv-nav.light:hover{background:rgba(250,250,248,.96);}
+.yv-nav-in{max-width:var(--max);margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;padding-inline:calc(var(--pad) - 16px);}
+.yv-logo{display:flex;align-items:center;gap:12px;}
+.yv-logo img{height:26px;width:auto;}
+.yv-logo img.lg-l{display:none;}
+.yv-nav.light .yv-logo img.lg-d{display:none;}
+.yv-nav.light .yv-logo img.lg-l{display:block;}
+.yv-logo span{font-size:9px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--acc);padding:4px 7px;border:1px solid var(--acc);border-radius:1px;}
+.yv-nav.light .yv-logo span{color:var(--acc-t);border-color:var(--acc-t);}
+.yv-navlinks{display:flex;gap:28px;font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--bone);}
+.yv-nav.light .yv-navlinks{color:var(--fg);}
+.yv-navlinks a{position:relative;padding:6px 0;opacity:.8;transition:opacity .25s;}
+.yv-navlinks a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--acc);transform:scaleX(0);transform-origin:0 50%;transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+.yv-navlinks a:hover{opacity:1;}
+.yv-navlinks a:hover::after{transform:scaleX(1);}
+.yv-nav .yv-btn{padding:11px 20px;}
+@media (max-width:760px){.yv-navlinks{display:none;}}
+
+/* ---------- hero: VIP mask opener, then centered copy ---------- */
+.yv-hero,.yv-hero.yv-dark{background:transparent;}   /* must stay transparent: the fixed gradient shows through the VIP cut-out */
+.yv-hero{position:relative;z-index:3;color:var(--bone);min-height:min(92vh,860px);display:flex;align-items:center;justify-content:center;padding-block:clamp(56px,8vw,110px) clamp(64px,8vw,110px);padding-left:var(--gut-l);padding-right:var(--gut-r);text-align:center;overflow:hidden;}
+.yv-mask{position:absolute;inset:0;z-index:0;width:100%;height:100%;pointer-events:none;}
+.yv-mask text{font-family:var(--f-display);font-weight:300;letter-spacing:-.04em;}
+.yv-hero-in{position:relative;z-index:1;opacity:0;max-width:860px;margin:0 auto;width:100%;}
+.yv-hero.yv-static .yv-hero-in{opacity:1;}
+.yv-h1{font-family:var(--f-display);font-weight:300;font-size:clamp(46px,7.4vw,104px);line-height:.94;letter-spacing:-.025em;margin:0 0 24px;text-wrap:balance;}
+.yv-h1 .yv-line{display:block;}
+.yv-h1 em{font-style:italic;color:var(--bone-m);}
+.yv-h1 .yv-sig{font-style:italic;font-weight:400;color:var(--acc);position:relative;display:inline-block;}
+.yv-h1 .yv-sig::after{content:"";position:absolute;left:2%;right:-3%;bottom:.06em;height:.07em;background:var(--acc);opacity:.6;transform:rotate(-1.4deg);border-radius:2px;}
+.yv-hero-lede{font-size:14.5px;line-height:1.75;color:var(--bone-m);max-width:52ch;margin:0 auto 34px;}
+.yv-glass{position:relative;max-width:560px;margin:0 auto;min-height:150px;}
+.yv-glass-panel{background:rgba(237,233,225,.06);border:1px solid rgba(237,233,225,.16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:3px;padding:22px 22px 18px;text-align:left;transition:filter .7s,opacity .6s,transform .7s;}
+.yv-glass-panel h3{font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1.05;letter-spacing:-.01em;margin:0 0 4px;}
+.yv-glass-panel p{font-size:12px;color:var(--bone-m);margin:0 0 14px;line-height:1.6;}
+.yv-coderow{display:flex;gap:8px;}
+.yv-coderow input{flex:1;min-width:0;background:rgba(10,13,16,.45);border:1px solid rgba(237,233,225,.18);color:var(--bone);padding:13px 14px;border-radius:1px;font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;}
+.yv-coderow input::placeholder{color:rgba(237,233,225,.3);}
+.yv-glass .yv-hint{font-size:11px;color:var(--bone-m);margin:10px 0 0;}
+.yv-glass .yv-hint.err{color:#FF8A7A;}
+.yv-glass.open .yv-glass-panel{filter:blur(14px);opacity:0;transform:scale(.96);pointer-events:none;}
+.yv-glass.shake .yv-glass-panel{animation:yv-shake .45s;}
+@keyframes yv-shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.yv-welcome{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:0;transform:translateY(14px);transition:opacity .7s .35s,transform .7s .35s;pointer-events:none;}
+.yv-glass.open .yv-welcome{opacity:1;transform:none;pointer-events:auto;}
+.yv-welcome .yv-micro{color:var(--acc);}
+.yv-welcome h4{font-family:var(--f-display);font-weight:300;font-size:clamp(30px,4vw,46px);line-height:1;letter-spacing:-.02em;margin:0;}
+.yv-welcome .yv-row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;font-size:11px;color:var(--bone-m);margin-top:8px;}
+.yv-welcome .yv-row b{display:block;font-family:var(--f-display);font-size:24px;font-weight:400;color:var(--bone);line-height:1;font-variant-numeric:tabular-nums;}
+
+/* ---------- icon row: ten icons, breathing in turn, dictionary tips ---------- */
+.yv-marq{background:var(--dark2);color:var(--acc);border-top:1px solid var(--dark-rule);border-bottom:1px solid var(--dark-rule);overflow:visible;padding-block:22px;z-index:4;}
+.yv-irow{display:flex;justify-content:space-evenly;align-items:center;flex-wrap:wrap;gap:12px;max-width:var(--max);margin:0 auto;padding-inline:calc(var(--pad) - 16px);}
+.yv-mi{position:relative;width:38px;height:38px;color:var(--acc);cursor:pointer;opacity:.85;transition:opacity .2s;background:none;border:none;animation:yv-breathe 15s ease-in-out infinite;animation-delay:calc(var(--i,0) * 1.5s);}
+.yv-mi svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+/* email PNG icons recoloured via mask: the PNG is the shape, currentColor is the ink */
+.yv-mi .ic{display:block;width:100%;height:100%;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat;}
+@keyframes yv-breathe{0%,12%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(88,184,200,0));}5%{transform:scale(1.22);filter:drop-shadow(0 0 10px rgba(88,184,200,.6));}}
+.yv-mi:hover{animation-play-state:paused;opacity:1;}
+.yv-mi .yv-tip{position:absolute;left:50%;bottom:calc(100% + 14px);transform:translate(-50%,6px);width:240px;text-align:left;background:var(--bone);color:var(--dark);font-family:var(--f-body);font-size:11px;font-weight:300;letter-spacing:0;line-height:1.55;padding:12px 14px;border-radius:2px;white-space:normal;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 18px 40px -16px rgba(0,0,0,.6);z-index:5;}
+.yv-mi .yv-tip b{display:block;font-family:var(--f-display);font-size:17px;font-weight:400;letter-spacing:-.01em;line-height:1.1;margin-bottom:4px;color:var(--dark);}
+.yv-mi .yv-tip b i{font-style:italic;font-weight:300;color:var(--acc-t);font-size:12px;margin-left:6px;letter-spacing:.02em;}
+.yv-mi .yv-tip::after{content:"";position:absolute;left:50%;top:100%;margin-left:-5px;border:5px solid transparent;border-top-color:var(--bone);}
+.yv-mi:hover .yv-tip,.yv-mi.on .yv-tip{opacity:1;transform:translate(-50%,0);}
+@media (max-width:480px){.yv-mi{width:30px;height:30px;}.yv-mi .yv-tip{width:200px;}}
+
+/* ---------- program: intro + perks (light) ---------- */
+.yv-how{background:var(--pg);}
+.yv-intro{font-family:var(--f-display);font-size:clamp(20px,2.2vw,27px);font-weight:300;line-height:1.35;letter-spacing:-.01em;max-width:34ch;margin:0 auto clamp(28px,4vw,48px);text-align:center;color:var(--fg);}
+.yv-intro b{font-weight:400;font-style:italic;color:var(--acc-t);}
+.yv-intro .wd{display:inline-block;will-change:opacity;}
+.yv-perks{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:960px;margin:0 auto;perspective:1400px;}
+.yv-perks li{border-radius:4px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:10px;min-width:0;transform-style:preserve-3d;backface-visibility:hidden;}
+.yv-perks .yv-ico{width:30px;height:30px;color:var(--acc-t);}
+.yv-perks b{font-family:var(--f-display);font-size:21px;font-weight:400;letter-spacing:-.01em;line-height:1.1;}
+.yv-perks p{font-size:12.5px;color:var(--muted);line-height:1.65;margin:0;}
+@media (max-width:760px){.yv-perks{grid-template-columns:1fr;}}
+
+/* ---------- five steps: glass banners on dark ---------- */
+.yv-steps{background:var(--dark);color:var(--bone);padding-block:clamp(56px,7vw,104px);padding-left:var(--gut-l);padding-right:var(--gut-r);}
+.yv-steps::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(50% 40% at 15% 10%,rgba(88,184,200,.22),transparent 70%),radial-gradient(40% 40% at 85% 90%,rgba(46,138,154,.18),transparent 70%);}
+.yv-slist{list-style:none;display:flex;flex-direction:column;gap:12px;max-width:820px;margin:0 auto;}
+.yv-st{border-radius:14px;display:grid;grid-template-columns:auto auto minmax(0,1fr) minmax(0,1.3fr);gap:18px;align-items:center;padding:18px 24px;}
+.yv-st .yv-n{font-family:var(--f-display);font-size:14px;letter-spacing:.12em;color:var(--acc);}
+.yv-st .yv-ico{width:30px;height:30px;}
+.yv-st h3{font-family:var(--f-display);font-weight:400;font-size:clamp(22px,2.4vw,28px);line-height:1.05;letter-spacing:-.015em;margin:0;}
+.yv-st p{font-size:13px;line-height:1.65;color:var(--bone-m);margin:0;}
+@media (max-width:700px){.yv-st{grid-template-columns:auto auto minmax(0,1fr);}.yv-st p{grid-column:1/-1;}}
+
+/* ---------- gifting: collapsed, rounded, narrow glass banners ---------- */
+.yv-flow{--pg:rgba(237,233,225,.05);--surf:rgba(237,233,225,.035);--soft:rgba(10,13,16,.38);--fg:var(--bone);--muted:var(--bone-m);--rule:var(--dark-rule);--acc-t:var(--acc);color:var(--bone);background:transparent;}
+.yv-flow::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(46% 42% at 18% 8%,rgba(88,184,200,.22),transparent 70%),radial-gradient(40% 40% at 88% 85%,rgba(46,138,154,.18),transparent 70%),var(--dark);opacity:.9;}
+.yv-stack{display:flex;flex-direction:column;gap:12px;padding-bottom:clamp(20px,4vw,56px);max-width:760px;margin:0 auto;}
+.yv-card{position:sticky;top:calc(var(--navh) + env(safe-area-inset-top,0px) + 14px);border-radius:16px;overflow:hidden;will-change:transform;}
+.yv-card:nth-child(2){top:calc(var(--navh) + env(safe-area-inset-top,0px) + 28px);}
+.yv-card:nth-child(3){top:calc(var(--navh) + env(safe-area-inset-top,0px) + 42px);}
+.yv-locked .yv-card{position:relative;top:auto;}
+.yv-card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--bone);padding:12px 22px;border-bottom:1px solid rgba(237,233,225,.08);}
+.yv-card-head .yv-t{display:flex;align-items:baseline;gap:12px;min-width:0;}
+.yv-card-head .yv-n{font-family:var(--f-display);font-size:12px;letter-spacing:.12em;color:var(--acc);}
+.yv-card-head h3{font-family:var(--f-display);font-weight:300;font-size:clamp(19px,2vw,24px);line-height:1;letter-spacing:-.02em;margin:0;}
+.yv-card-head .yv-st2{display:flex;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums;}
+.yv-card-head .yv-st2 .yv-micro{color:var(--bone-m);}
+.yv-card-head .yv-st2 b{font-family:var(--f-display);font-weight:400;font-size:24px;line-height:1;}
+.yv-card-head .yv-st2 b.ok{color:var(--acc);}
+.yv-card-head .yv-lockmsg{display:none;align-items:center;gap:10px;font-size:11.5px;color:var(--bone-m);}
+.yv-card-head .yv-lockmsg .yv-ico{width:18px;height:18px;}
+.yv-locked .yv-card-head .yv-st2{display:none;}
+.yv-locked .yv-card-head .yv-lockmsg{display:inline-flex;}
+.yv-locked .yv-card-head{border-bottom-color:transparent;}
+.yv-card-wrap{display:grid;grid-template-rows:1fr;transition:grid-template-rows .9s cubic-bezier(.2,.8,.2,1);}
+.yv-locked .yv-card-wrap{grid-template-rows:0fr;}
+.yv-card-wrap>div{overflow:hidden;min-height:0;}
+.yv-card-body{padding:clamp(18px,2.6vw,26px) 22px 24px;}
+.yv-card-sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;max-width:60ch;}
+
+.yv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.yv-prod{background:var(--pg);border:1px solid var(--rule);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:9px;cursor:pointer;position:relative;text-align:left;color:inherit;transition:border-color .2s,transform .25s,box-shadow .25s;}
+.yv-prod:hover{border-color:var(--fg);transform:translateY(-4px);box-shadow:0 18px 40px -24px rgba(0,0,0,.35);}
+.yv-prod.sel{border-color:var(--acc-t);box-shadow:inset 0 0 0 1px var(--acc-t);}
+.yv-prod .yv-ph{aspect-ratio:4/3;max-width:100%;background:repeating-linear-gradient(135deg,transparent,transparent 11px,rgba(237,233,225,.05) 11px,rgba(237,233,225,.05) 22px),var(--soft);border:1px solid var(--rule);display:flex;align-items:flex-end;padding:8px;border-radius:4px;}
+.yv-prod .yv-ph small{font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+.yv-prod h4{font-family:var(--f-display);font-weight:400;font-size:18px;line-height:1.1;letter-spacing:-.01em;margin:0;}
+.yv-prod .yv-pm{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);}
+.yv-prod .yv-pm b{font-weight:500;color:var(--fg);font-variant-numeric:tabular-nums;}
+.yv-prod .yv-chk{position:absolute;top:9px;right:9px;width:22px;height:22px;border:1px solid var(--rule);background:var(--pg);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s,transform .3s cubic-bezier(.2,1.4,.4,1);}
+.yv-prod .yv-chk svg{width:11px;height:11px;stroke:var(--dark);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.4);transition:opacity .2s,transform .3s cubic-bezier(.2,1.4,.4,1);}
+.yv-prod.sel .yv-chk{background:var(--acc);border-color:var(--acc);transform:scale(1.1);}
+.yv-prod.sel .yv-chk svg{opacity:1;transform:scale(1);}
+.yv-prod.nofit:not(.sel){opacity:.4;}
+.yv-prod.nofit:not(.sel):hover{border-color:var(--rule);transform:none;box-shadow:none;}
+.yv-prod .yv-nofit{display:none;font-size:10px;color:#FF8A7A;font-weight:500;}
+.yv-prod.nofit:not(.sel) .yv-nofit{display:block;}
+.yv-picksum{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule);font-size:13px;}
+.yv-picksum .yv-muted{color:var(--muted);}
+.yv-picksum b{font-weight:500;font-variant-numeric:tabular-nums;}
+
+.yv-sign{display:grid;grid-template-columns:1fr;gap:clamp(18px,3vw,28px);}
+.yv-dl{list-style:none;display:flex;flex-direction:column;}
+.yv-dl li{display:grid;grid-template-columns:34px 1fr;gap:14px;align-items:baseline;padding:14px 0;border-top:1px solid var(--rule);}
+.yv-dl li:last-child{border-bottom:1px solid var(--rule);}
+.yv-dl .yv-dn{font-family:var(--f-display);font-size:14px;letter-spacing:.1em;color:var(--acc-t);}
+.yv-dl .yv-dt{font-family:var(--f-display);font-size:clamp(19px,1.9vw,23px);font-weight:400;line-height:1.15;letter-spacing:-.01em;}
+.yv-dl .yv-dt small{display:block;font-family:var(--f-body);font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:0;}
+.yv-dl-note{font-size:12px;color:var(--muted);margin:12px 0 0;}
+.yv-agree{background:var(--surf);border:1px solid var(--rule);border-radius:10px;}
+.yv-agree-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--rule);}
+.yv-agree-top .yv-t{display:flex;gap:14px;align-items:center;min-width:0;}
+.yv-agree-top h4{font-family:var(--f-display);font-weight:400;font-size:20px;letter-spacing:-.01em;margin:0 0 2px;}
+.yv-agree-top p{font-size:12px;color:var(--muted);margin:0;}
+.yv-agree-top .yv-read{font-size:11px;color:var(--acc-t);font-weight:500;}
+.yv-agree-foot{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;}
+.yv-check{display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.55;cursor:pointer;}
+.yv-check input{margin-top:3px;accent-color:var(--acc-t);width:16px;height:16px;flex:none;}
+.yv-check.off{opacity:.5;}
+.yv-sigrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,140px);gap:12px;}
+@media (max-width:520px){.yv-sigrow{grid-template-columns:1fr;}}
+
+.yv-ship{display:grid;grid-template-columns:1fr;gap:clamp(18px,3vw,28px);}
+.yv-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;}
+.yv-field{display:flex;flex-direction:column;gap:6px;min-width:0;grid-column:span 6;}
+.yv-field.s3{grid-column:span 3;}.yv-field.s2{grid-column:span 2;}.yv-field.s1{grid-column:span 1;}
+.yv-field label{font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.yv-field input,.yv-field textarea,.yv-field select{width:100%;background:var(--soft);border:1px solid var(--rule);color:var(--fg);padding:13px 14px;border-radius:6px;font-size:14px;font-weight:300;}
+.yv-field input:focus,.yv-field textarea:focus,.yv-field select:focus{border-color:var(--fg);outline:none;background:var(--pg);}
+.yv-field .yv-sig-in{font-family:var(--f-display);font-style:italic;font-size:24px;padding:8px 13px;font-weight:400;}
+@media (max-width:620px){.yv-field.s3,.yv-field.s2,.yv-field.s1{grid-column:span 6;}}
+.yv-order{background:rgba(10,13,16,.6);color:var(--bone);border-radius:10px;padding:20px 20px 18px;position:relative;border:1px solid var(--dark-rule);}
+.yv-order .yv-micro{color:var(--acc);display:block;margin-bottom:10px;}
+.yv-order h4{font-family:var(--f-display);font-weight:400;font-size:24px;letter-spacing:-.01em;margin:0 0 12px;}
+.yv-sumlist{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:12.5px;margin:0 0 14px;}
+.yv-sumlist li{display:flex;justify-content:space-between;gap:12px;color:var(--bone-m);}
+.yv-sumlist li b{font-weight:500;color:var(--bone);font-variant-numeric:tabular-nums;}
+.yv-sumlist li.empty{font-style:italic;}
+.yv-sumtot{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--dark-rule);padding-top:12px;font-size:12px;color:var(--bone-m);}
+.yv-sumtot b{font-family:var(--f-display);font-weight:400;font-size:28px;color:var(--bone);font-variant-numeric:tabular-nums;}
+.yv-sumbar{height:2px;background:var(--dark-rule);margin:10px 0 16px;position:relative;overflow:hidden;}
+.yv-sumbar i{position:absolute;inset:0;background:var(--acc);transform:scaleX(0);transform-origin:0 50%;transition:transform .5s cubic-bezier(.2,.8,.2,1);}
+.yv-sumrows{display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:var(--bone-m);margin-bottom:16px;}
+.yv-sumrows div{display:flex;justify-content:space-between;gap:10px;}
+.yv-sumrows div b{color:var(--bone);font-weight:500;}
+.yv-sumrows .ok b{color:var(--acc);}
+.yv-order .yv-btn{width:100%;}
+.yv-order .yv-recap{font-size:11px;color:var(--bone-m);margin:10px 0 0;line-height:1.5;}
+
+.yv-done{color:var(--bone);padding:clamp(24px,4vw,40px);border-radius:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;max-width:760px;margin:0 auto;}
+.yv-done h3{font-family:var(--f-display);font-weight:300;font-size:clamp(30px,3.6vw,46px);line-height:1;letter-spacing:-.02em;margin:0 0 10px;}
+.yv-done h3 em{font-style:italic;color:var(--acc);}
+.yv-done p{font-size:13.5px;color:var(--bone-m);max-width:52ch;margin:0;line-height:1.7;}
+.yv-done .yv-micro{color:var(--acc);}
+.yv-done ol{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:12.5px;min-width:220px;}
+.yv-done ol li{display:flex;gap:12px;align-items:baseline;color:var(--bone-m);}
+.yv-done ol li i{font-style:normal;font-family:var(--f-display);color:var(--acc);font-size:14px;letter-spacing:.08em;}
+@media (max-width:700px){.yv-done{grid-template-columns:1fr;}}
+
+/* ---------- creator of the month ---------- */
+.yv-spot{margin:clamp(28px,4vw,56px) auto 0;max-width:560px;border-radius:16px;padding:20px 22px 24px;position:relative;z-index:1;text-align:center;}
+.yv-spot-head{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:18px;}
+.yv-spot-head .yv-eyebrow{margin:0;justify-content:center;}
+.yv-spot-head .yv-micro{color:var(--bone-m);}
+.yv-spot-body{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:clamp(16px,3vw,28px);align-items:center;justify-content:center;text-align:left;}
+.yv-pola{perspective:1200px;background:none;border:none;cursor:pointer;width:190px;max-width:100%;transform:rotate(-3deg);padding:0;margin:0 auto;display:block;color:var(--dark);text-align:left;}
+.yv-pola-in{position:relative;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.2,.8,.2,1);}
+.yv-pola.flip .yv-pola-in{transform:rotateY(180deg);}
+@media (hover:hover){.yv-pola:hover .yv-pola-in{transform:rotateY(180deg);}}
+.yv-pola-f,.yv-pola-b{backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--bone);border-radius:2px;padding:10px 10px 12px;box-shadow:0 30px 60px -30px rgba(0,0,0,.9);}
+.yv-pola-b{position:absolute;inset:0;transform:rotateY(180deg);display:flex;flex-direction:column;justify-content:center;gap:10px;}
+.yv-pola .yv-ph{aspect-ratio:4/5;max-width:100%;background:repeating-linear-gradient(135deg,transparent,transparent 11px,rgba(10,13,16,.06) 11px,rgba(10,13,16,.06) 22px),#E4E0D7;display:flex;align-items:flex-end;padding:8px;}
+.yv-pola .yv-ph small{font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(10,13,16,.55);font-weight:700;}
+.yv-pola-cap{display:block;font-family:var(--f-display);font-style:italic;font-size:15px;color:rgba(10,13,16,.8);margin-top:8px;}
+.yv-pola-b .yv-micro{color:var(--acc-t);}
+.yv-pola-b .yv-capt{font-family:var(--f-body);font-size:12.5px;line-height:1.55;color:var(--dark);margin:0;}
+.yv-spot h3{font-family:var(--f-display);font-weight:300;font-size:clamp(28px,3vw,40px);line-height:1;letter-spacing:-.02em;margin:0 0 6px;}
+.yv-spot-sub{font-size:12px;color:var(--bone-m);margin:0 0 12px;}
+.yv-spot-hint{font-size:11px;color:var(--bone-m);margin:0 0 14px;}
+@media (max-width:600px){.yv-spot-body{grid-template-columns:1fr;text-align:center;}}
+
+/* ---------- modal + corner pop-up ---------- */
+.yv-modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) var(--gut-r) max(16px,env(safe-area-inset-bottom,0px)) var(--gut-l);}
+.yv-modal-bg{position:absolute;inset:0;background:rgba(10,13,16,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+.yv-modal-box{position:relative;width:min(760px,100%);max-height:100%;background:var(--pg);color:var(--fg);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.6);}
+.yv-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid var(--rule);}
+.yv-modal-head h4{font-family:var(--f-display);font-weight:400;font-size:24px;letter-spacing:-.01em;margin:0;}
+.yv-modal-x{background:none;border:1px solid var(--rule);width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--fg);flex:none;}
+.yv-modal-x svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;}
+.yv-modal-scroll{overflow-y:auto;padding:22px 24px;font-size:13.5px;line-height:1.75;min-height:0;-webkit-overflow-scrolling:touch;}
+.yv-modal-scroll h5{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin:18px 0 6px;color:var(--muted);}
+.yv-modal-scroll p{margin:0 0 8px;max-width:68ch;}
+.yv-modal-scroll .yv-placeholder{display:inline-block;background:#FFF2C2;border:1px dashed #D9B23A;padding:2px 8px;font-size:11px;font-weight:500;color:#5A4600;}
+.yv-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 22px;border-top:1px solid var(--rule);background:var(--surf);}
+.yv-modal-foot .yv-scrollhint{font-size:11.5px;color:var(--muted);}
+.yv-modal-foot .yv-scrollhint.done{color:var(--acc-t);}
+.yv-modal-prog{height:2px;background:var(--rule);}
+.yv-modal-prog i{display:block;height:100%;width:0;background:var(--acc-t);transition:width .15s linear;}
+@media (max-width:600px){.yv-modal{padding:0;}.yv-modal-box{width:100%;height:100%;max-height:none;border-radius:0;}}
+.yv-corner{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;gap:10px;background:rgba(10,13,16,.9);color:var(--bone);border:1px solid var(--dark-rule);padding:12px 16px;border-radius:999px;cursor:pointer;font-size:11px;font-weight:500;letter-spacing:.08em;box-shadow:0 20px 50px -20px rgba(0,0,0,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:transform .25s,border-color .25s,bottom .35s;}
+.yv-corner:hover{transform:translateY(-2px);border-color:var(--acc);}
+.yv-corner .yv-ico{width:18px;height:18px;}
+.yv-corner.lift{bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+.yv-pop{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:21;width:min(420px,calc(100vw - 28px));background:rgba(10,13,16,.94);color:var(--bone);border:1px solid var(--dark-rule);border-radius:12px;box-shadow:0 40px 90px -30px rgba(0,0,0,.8);transform:translateY(16px) scale(.98);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s;max-height:calc(100vh - 40px);display:flex;flex-direction:column;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+.yv-pop.on{transform:none;opacity:1;pointer-events:auto;}
+.yv-pop-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px 12px;}
+.yv-pop-head h4{font-family:var(--f-display);font-weight:300;font-size:26px;letter-spacing:-.02em;line-height:1;margin:0;}
+.yv-pop-head .yv-modal-x{border-color:var(--dark-rule);color:var(--bone);width:32px;height:32px;}
+.yv-pop-body{padding:0 18px 18px;overflow-y:auto;}
+.yv-pop-body>p{font-size:12px;color:var(--bone-m);line-height:1.6;margin:0 0 14px;}
+.yv-pop .yv-fields{gap:10px;}
+.yv-pop .yv-field label{color:var(--bone-m);}
+.yv-pop .yv-field input,.yv-pop .yv-field select{background:rgba(237,233,225,.05);border-color:var(--dark-rule);color:var(--bone);padding:11px 12px;font-size:13px;}
+.yv-pop .yv-field input:focus,.yv-pop .yv-field select:focus{border-color:var(--bone);background:rgba(237,233,225,.08);}
+.yv-pop .yv-field select option{color:#000;}
+.yv-pop-foot{grid-column:span 6;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:4px;}
+.yv-pop-foot small{font-size:10.5px;color:var(--bone-m);}
+.yv-pop-foot .yv-btn{padding:12px 18px;}
+.yv-pop-done{grid-column:span 6;background:rgba(88,184,200,.1);border:1px solid var(--acc);padding:12px 14px;border-radius:6px;font-size:12.5px;}
+.yv-contact{font-size:11.5px;color:var(--bone-m);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.yv-contact code{font-family:var(--f-body);font-weight:500;color:var(--bone);user-select:all;}
+.yv-contact button{background:none;border:1px solid var(--dark-rule);color:var(--bone-m);font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:5px 9px;border-radius:1px;cursor:pointer;}
+@media (max-width:600px){.yv-pop .yv-field.s3{grid-column:span 6;}}
+
+/* ---------- good to know: small glass tiles, stacked ---------- */
+.yv-faq-sec{background:var(--pg);}
+.yv-faq{max-width:640px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:10px;}
+.yv-q{position:relative;display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:baseline;padding:16px 18px 18px;border-radius:12px;min-width:0;overflow:hidden;}
+.yv-q .yv-qn{font-family:var(--f-display);font-size:12px;letter-spacing:.1em;color:var(--acc-t);}
+.yv-q .yv-qt{font-family:var(--f-display);font-size:21px;font-weight:400;letter-spacing:-.01em;line-height:1.15;margin:0 0 6px;}
+.yv-q p{font-size:13px;color:var(--muted);line-height:1.65;margin:0;max-width:52ch;min-height:1.65em;}
+.yv-q p .cur{display:inline-block;width:1px;height:1em;background:var(--acc-t);vertical-align:-.15em;margin-left:2px;animation:yv-blink .8s steps(1) infinite;}
+@keyframes yv-blink{50%{opacity:0;}}
+.yv-q .yv-qrule{position:absolute;left:0;top:0;height:2px;width:100%;background:var(--acc-t);transform:scaleX(0);transform-origin:0 50%;}
+@media (max-width:480px){.yv-q{grid-template-columns:1fr;gap:4px;padding:14px 14px 16px;}.yv-q .yv-qt{font-size:19px;}}
+
+/* ---------- closing (compact) ---------- */
+.yv-close{position:relative;background:transparent;color:var(--bone);overflow:hidden;padding-block:clamp(44px,6vw,80px);padding-left:var(--gut-l);padding-right:var(--gut-r);}
+.yv-close::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--dark);opacity:.86;}
+.yv-close-bg{position:absolute;inset:-40% 0;z-index:0;background:radial-gradient(50% 50% at 50% 50%,rgba(88,184,200,.2),rgba(46,138,154,.06) 50%,transparent 75%);pointer-events:none;}
+.yv-close-copy{position:relative;z-index:1;text-align:center;}
+.yv-close .yv-h2{font-size:clamp(30px,4.2vw,56px);max-width:18ch;line-height:.98;margin-inline:auto;}
+.yv-close .yv-h2 em{color:var(--acc);opacity:1;}
+.yv-close .yv-h2 .ch{display:inline-block;will-change:transform,opacity;}
+.yv-close .yv-h2 .w{display:inline-block;white-space:nowrap;}
+.yv-close .yv-lede{margin-inline:auto;}
+.yv-close .yv-ctarow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:28px;}
+
+/* ---------- footer ---------- */
+.yv-foot{background:var(--dark);color:var(--bone-m);padding-block:0 calc(28px + 64px);padding-left:var(--gut-l);padding-right:var(--gut-r);}
+.yv-foot-line{display:block;height:1px;background:var(--acc);transform:scaleX(0);transform-origin:0 50%;max-width:var(--max);margin:0 auto;}
+.yv-foot-in{max-width:var(--max);margin:0 auto;padding-inline:calc(var(--pad) - 16px);padding-top:28px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;font-size:11px;}
+.yv-foot img{height:20px;width:auto;opacity:.8;}
+.yv-foot nav{display:flex;gap:22px;font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;align-items:center;}
+.yv-foot nav a:hover{color:var(--bone);}
+.yv-soc{display:flex;gap:10px;align-items:center;}
+.yv-soc a{width:34px;height:34px;border:1px solid var(--dark-rule);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bone-m);transition:color .2s,border-color .2s,transform .2s;}
+.yv-soc a:hover{color:var(--acc);border-color:var(--acc);transform:translateY(-2px);}
+.yv-soc svg{width:15px;height:15px;fill:currentColor;}
+
+/* ---------- sticky bottom CTA + music pill ---------- */
+.yv-stickybar{position:fixed;left:0;right:0;bottom:0;z-index:8;transform:translateY(110%);transition:transform .35s ease;background:rgba(10,13,16,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--bone);border-top:1px solid var(--dark-rule);padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));padding-left:var(--gut-l);padding-right:var(--gut-r);}
+.yv-stickybar.on{transform:none;}
+.yv-stickybar-in{max-width:var(--max);margin:0 auto;padding-inline:calc(var(--pad) - 16px);display:flex;align-items:center;justify-content:space-between;gap:16px;padding-right:200px;}
+.yv-stickybar p{font-size:12.5px;color:var(--bone-m);margin:0;min-width:0;}
+.yv-stickybar p b{color:var(--bone);font-weight:500;}
+.yv-stickybar .yv-btn{padding:11px 18px;flex:none;}
+@media (max-width:600px){.yv-stickybar-in{padding-right:0;}.yv-corner span{display:none;}.yv-corner{padding:12px;}}
+.yv-music{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;gap:10px;background:rgba(10,13,16,.9);color:var(--bone);border:1px solid var(--dark-rule);padding:10px 14px 10px 10px;border-radius:999px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;box-shadow:0 20px 50px -20px rgba(0,0,0,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:bottom .35s,border-color .25s;}
+.yv-music:hover{border-color:var(--acc);}
+.yv-music.lift{bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+.yv-music .yv-eq{display:flex;align-items:flex-end;gap:2px;width:22px;height:16px;}
+.yv-music .yv-eq i{display:block;width:3px;height:3px;background:var(--acc);border-radius:1px;transition:height .3s;}
+.yv-music.on .yv-eq i{animation:yv-eq .9s ease-in-out infinite alternate;}
+.yv-music.on .yv-eq i:nth-child(2){animation-delay:-.2s;}.yv-music.on .yv-eq i:nth-child(3){animation-delay:-.45s;}.yv-music.on .yv-eq i:nth-child(4){animation-delay:-.1s;}.yv-music.on .yv-eq i:nth-child(5){animation-delay:-.6s;}
+@keyframes yv-eq{from{height:3px}to{height:16px}}
+.yv-music span.lbl{color:var(--bone-m);}
+.yv-music.on span.lbl{color:var(--bone);}
+@media (max-width:600px){.yv-music span.lbl{display:none;}.yv-music{padding:10px;}}
+.yv-spot-player{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:13;width:min(380px,calc(100vw - 28px));background:rgba(10,13,16,.94);border:1px solid var(--dark-rule);border-radius:12px;box-shadow:0 40px 90px -30px rgba(0,0,0,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transform:translateY(12px) scale(.98);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s,bottom .35s;overflow:hidden;color:var(--bone);}
+.yv-spot-player.on{transform:none;opacity:1;pointer-events:auto;}
+.yv-spot-player.lift{bottom:calc(138px + env(safe-area-inset-bottom,0px));}
+.yv-spot-player-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 8px;}
+.yv-spot-player-head .yv-micro{color:#1DB954;}
+.yv-spot-player-head .yv-modal-x{border-color:var(--dark-rule);color:var(--bone);width:28px;height:28px;}
+.yv-spot-player-body{padding:0 14px 14px;}
+.yv-spot-player iframe{display:block;border-radius:12px;background:#121212;}
+.yv-spot-note{font-size:11px;color:var(--bone-m);line-height:1.6;margin:10px 0 0;}
+.yv-spot-note code{font-family:var(--f-body);color:var(--bone);}
+.yv-spot-note a{color:#1DB954;font-weight:500;}
+.yv-spot-note button{background:none;border:1px solid var(--dark-rule);color:var(--acc);font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:5px 9px;border-radius:1px;cursor:pointer;margin-left:6px;}
+</style>
+
+<div class="yv" id="yvRoot">
+<div class="yv-pre" id="pre" aria-hidden="true"><img src="vip-assets/logo-dark-bg.png" alt=""><span class="yv-pre-t">Opening your invitation</span><span class="yv-pre-bar"><i id="preBar"></i></span><span class="yv-pre-n" id="preN">00</span></div>
+<div class="yv-grad" aria-hidden="true"></div><div class="yv-grain" aria-hidden="true"></div>
+<div class="yv-wm" id="wm" aria-hidden="true">VIP</div>
+<div class="yv-progress" aria-hidden="true"><i id="prog"></i></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- yogibo.com feature-strip icons, verbatim -->
+    <symbol id="i-bead" viewBox="0 0 48 48"><circle cx="24" cy="24" r="5"/><circle cx="34" cy="24" r="5"/><circle cx="29" cy="32.7" r="5"/><circle cx="19" cy="32.7" r="5"/><circle cx="14" cy="24" r="5"/><circle cx="19" cy="15.3" r="5"/><circle cx="29" cy="15.3" r="5"/></symbol>
+    <symbol id="i-wash" viewBox="0 0 48 48"><rect x="9" y="4" width="30" height="40" rx="3"/><line x1="9" y1="13" x2="39" y2="13"/><circle cx="15" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="20" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="24" cy="28" r="9"/><circle cx="24" cy="28" r="4.5"/><path d="M20 27.5c1.6 2.2 6.4 2.2 8 0"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 48 48"><path d="M24 4L40 10v11c0 11-7 18-16 23-9-5-16-12-16-23V10z"/><path d="M17 24l5 5 10-12"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 48 48"><path d="M24 5C13.5 5 5 13 5 23c0 6.6 5 10 10 10 2.8 0 4-1.8 4-3.8 0-2.6 2-3.7 4-3.7h4.5C39 25.5 43 21 43 15 43 9 34.5 5 24 5Z"/><circle cx="15" cy="21" r="2" fill="currentColor" stroke="none"/><circle cx="20" cy="14" r="2" fill="currentColor" stroke="none"/><circle cx="28" cy="14" r="2" fill="currentColor" stroke="none"/><circle cx="34" cy="20" r="2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-thumb" viewBox="0 0 48 48"><path d="M13 43V21H7v22z"/><path d="M13 21l7-15c3.3 0 5.5 2.4 5 5.6L23.8 18H36a4 4 0 013.9 4.8l-2.6 13A4 4 0 0133.3 39H13"/></symbol>
+    <!-- program icons, same spec -->
+    <symbol id="i-mail" viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="26" rx="2"/><path d="M6 14l18 13 18-13"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 48 48"><path d="M24 6c-6 0-9 5-9 10 0 4-2 8-5 12-3 5-2 12 4 14 6 2 14 2 20 0 6-2 7-9 4-14-3-4-5-8-5-12 0-5-3-10-9-10Z"/><path d="M19 34c2 1.5 8 1.5 10 0"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 48 48"><path d="M8 40l4-12L34 6l8 8-22 22z"/><path d="M30 10l8 8"/><path d="M6 42h36"/></symbol>
+    <symbol id="i-truck" viewBox="0 0 48 48"><rect x="4" y="12" width="26" height="20" rx="2"/><path d="M30 18h8l6 7v7H30z"/><circle cx="12" cy="36" r="3.5"/><circle cx="36" cy="36" r="3.5"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 48 48"><rect x="5" y="13" width="38" height="26" rx="3"/><path d="M17 13l3-5h8l3 5"/><circle cx="24" cy="26" r="7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 48 48"><rect x="10" y="21" width="28" height="21" rx="2"/><path d="M16 21v-6a8 8 0 0 1 16 0v6"/><circle cx="24" cy="31" r="2"/></symbol>
+    <symbol id="i-user" viewBox="0 0 48 48"><circle cx="24" cy="17" r="8"/><path d="M8 42c2-9 8-13 16-13s14 4 16 13"/></symbol>
+    <symbol id="s-ig" viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.8.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2M12 0C8.7 0 8.3 0 7.1.1 5.8.1 4.9.3 4.1.6c-.8.3-1.5.7-2.1 1.4C1.3 2.6.9 3.3.6 4.1.3 4.9.1 5.8.1 7.1 0 8.3 0 8.7 0 12s0 3.7.1 4.9c.1 1.3.3 2.2.6 2.9.3.8.7 1.5 1.4 2.1.6.7 1.3 1.1 2.1 1.4.8.3 1.6.5 2.9.6 1.2.1 1.6.1 4.9.1s3.7 0 4.9-.1c1.3-.1 2.2-.3 2.9-.6.8-.3 1.5-.7 2.1-1.4.7-.6 1.1-1.3 1.4-2.1.3-.8.5-1.6.6-2.9.1-1.2.1-1.6.1-4.9s0-3.7-.1-4.9c-.1-1.3-.3-2.2-.6-2.9-.3-.8-.7-1.5-1.4-2.1C21.4 1.3 20.7.9 19.9.6 19.1.3 18.2.1 16.9.1 15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.4 1.4 0 1 0 0 2.9 1.4 1.4 0 0 0 0-2.9z"/></symbol>
+    <symbol id="s-tt" viewBox="0 0 24 24"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.19 1.11 2.78 1.62 4.33 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></symbol>
+  </defs>
+</svg>
+
+<!-- ================= NAV ================= -->
+<header class="yv-nav" id="nav">
+  <div class="yv-nav-in">
+    <a class="yv-logo" href="#top" aria-label="Yogibo VIP home"><img class="lg-d" src="vip-assets/logo-dark-bg.png" alt="Yogibo"><img class="lg-l" src="vip-assets/logo-light-bg.png" alt=""><span>VIP</span></a>
+    <nav class="yv-navlinks" aria-label="Page sections"><a href="#how">How it works</a><a href="#flow">Your invitation</a><a href="#faq">Questions</a></nav>
+    <a class="yv-btn" href="#code">Enter your code</a>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="yv-hero yv-dark" id="top">
+  <svg class="yv-mask" id="maskSvg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><mask id="vipMask"><rect width="1600" height="900" fill="#fff"/><text id="maskText" x="800" y="450" font-size="220" text-anchor="middle" dominant-baseline="central" fill="#000">VIP</text></mask></defs>
+    <rect id="maskRect" width="1600" height="900" fill="#0A0D10" mask="url(#vipMask)"/>
+  </svg>
+  <div class="yv-hero-in">
+    <p class="yv-eyebrow c"><span class="yv-ln"></span>Yogibo VIP · By invitation only<span class="yv-ln"></span></p>
+    <h1 class="yv-h1"><span class="yv-line">You were <span class="yv-sig">hand-picked</span>.</span><span class="yv-line"><em>Now pick yours.</em></span></h1>
+    <p class="yv-hero-lede">Yogibo VIP is by invitation only. A handful of codes go out each season, to creators whose work we already follow. Yours opens a private selection from the line and a credit to spend on it. Nothing to apply for. Nothing to buy.</p>
+    <div class="yv-glass" id="glass">
+      <div class="yv-glass-panel" id="code">
+        <h3>Your invitation</h3>
+        <p>The code is in the message from the Yogibo marketing team. One code, one creator, one season.</p>
+        <form class="yv-coderow" id="codeForm" autocomplete="off">
+          <input id="codeInput" name="invite_code" placeholder="YOGI-XXXX" aria-label="Invite code" maxlength="12">
+          <button class="yv-btn" type="submit" id="codeBtn">Open</button>
+        </form>
+        <p class="yv-hint" id="codeHint">No code? Invitations are limited and extended by the marketing team. Use "Not invited?" in the corner to ask to be considered.</p>
+      </div>
+      <div class="yv-welcome" aria-live="polite">
+        <span class="yv-micro">Invitation accepted</span>
+        <h4 id="letName">Welcome.</h4>
+        <div class="yv-row"><span>Credit<b id="letCredit">$0</b></span><span>Deliverables<b id="letDl">0</b></span><span>Valid until<b id="letExp">—</b></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ICON ROW ================= -->
+<div class="yv-marq" id="marq" aria-label="What makes a Yogibo, and how the program works">
+  <!-- Yogibo's email icon set, straight from Shopify Files (holiday26-icon-*.png), recoloured to brand teal with a CSS mask -->
+  <div class="yv-irow">
+    <button type="button" class="yv-mi" style="--i:0" aria-label="Bead intelligence"><i class="ic" style="--ic:url(vip-assets/icons/bead-intelligence.png)"></i><span class="yv-tip"><b>Bead intelligence <i>noun</i></b>Millions of micro-beads read your body and adapt in real time, contouring and supporting you the instant you sink in.</span></button>
+    <button type="button" class="yv-mi" style="--i:1" aria-label="Sensory inclusive"><i class="ic" style="--ic:url(vip-assets/icons/sensory.png)"></i><span class="yv-tip"><b>Sensory Inclusive® <i>adj.</i></b>Gentle, even pressure from the beads helps bodies settle. Designed with sensory needs in mind.</span></button>
+    <button type="button" class="yv-mi" style="--i:2" aria-label="Washable"><i class="ic" style="--ic:url(vip-assets/icons/washable.png)"></i><span class="yv-tip"><b>Washable <i>adj.</i></b>Every cover zips off and goes straight in the washing machine. Fresh, clean, and ready in moments.</span></button>
+    <button type="button" class="yv-mi" style="--i:3" aria-label="Durable"><i class="ic" style="--ic:url(vip-assets/icons/durable.png)"></i><span class="yv-tip"><b>Durable <i>adj.</i></b>Reinforced seams and a cover that shrugs off daily life, pets and kids included.</span></button>
+    <button type="button" class="yv-mi" style="--i:4" aria-label="Built to last"><i class="ic" style="--ic:url(vip-assets/icons/built-to-last.png)"></i><span class="yv-tip"><b>Built to last <i>adj.</i></b>Refillable beads and replaceable covers mean your Yogibo improves with every year of use.</span></button>
+    <button type="button" class="yv-mi" style="--i:5" aria-label="Light to use"><i class="ic" style="--ic:url(vip-assets/icons/light-to-use.png)"></i><span class="yv-tip"><b>Light to use <i>adj.</i></b>Light enough to carry from room to room. No lifting, no setup, just drop it where you want it.</span></button>
+    <button type="button" class="yv-mi" style="--i:6" aria-label="Colour options"><i class="ic" style="--ic:url(vip-assets/icons/color-options.png)"></i><span class="yv-tip"><b>Colour options <i>noun</i></b>40+ combinations, from Pastels to Vivid to outdoor Zoola. Mix, match, and swap covers whenever the mood strikes.</span></button>
+    <button type="button" class="yv-mi" style="--i:7" aria-label="Space and eco"><i class="ic" style="--ic:url(vip-assets/icons/space-eco.png)"></i><span class="yv-tip"><b>Space &amp; eco <i>adj.</i></b>Refill the beads instead of replacing the seat. Less waste, and it fits where a sofa won't.</span></button>
+    <button type="button" class="yv-mi" style="--i:8" aria-label="US patented"><i class="ic" style="--ic:url(vip-assets/icons/us-patented.png)"></i><span class="yv-tip"><b>US patented <i>adj.</i></b>The bead-and-fabric design is Yogibo's own, patented in the United States.</span></button>
+    <button type="button" class="yv-mi" style="--i:9" aria-label="Number one in Japan"><i class="ic" style="--ic:url(vip-assets/icons/japan-no1.png)"></i><span class="yv-tip"><b>No.1 in Japan <i>noun</i></b>Japan's best-selling bean bag brand, now in living rooms across the US.</span></button>
+    <button type="button" class="yv-mi" style="--i:10" aria-label="Top rated"><i class="ic" style="--ic:url(vip-assets/icons/rating.png)"></i><span class="yv-tip"><b>Top rated <i>adj.</i></b>Rated by thousands of customers. The seat people keep recommending to each other.</span></button>
+  </div>
+</div>
+
+<!-- ================= HOW THE PROGRAM WORKS ================= -->
+<section class="yv-sec yv-how" id="how">
+  <div class="yv-in">
+    <div class="yv-sechead">
+      <p class="yv-eyebrow"><span class="yv-ln"></span>How it works<span class="yv-ln"></span></p>
+      <h2 class="yv-h2">How the <em>program</em> works.</h2>
+      <p class="yv-lede">From your invitation to your first post, this is everything in order.</p>
+    </div>
+    <p class="yv-intro">Yogibo VIP is a <b>hand-selected</b> group of creators who already live in their space and show it. There is no application and nothing to buy. You receive a <b>code with a credit on it</b>, choose what you want from the line, and we <b>ship it to you free</b>. In return, you create for the <b>campaign in your brief</b> and tag <b>@yogibobags</b>.</p>
+    <ul class="yv-perks" id="perks">
+      <li class="yv-glassl"><span class="yv-ico"><svg><use href="#i-bag"/></svg></span><b>Your Yogibo, on us</b><p>Choose from the line up to your credit. Shipping and tax included.</p></li>
+      <li class="yv-glassl"><span class="yv-ico"><svg><use href="#i-pen"/></svg></span><b>Direction from the team</b><p>Every invitation comes with a creative brief, so what you make fits the Yogibo campaign it's part of.</p></li>
+      <li class="yv-glassl"><span class="yv-ico"><svg><use href="#i-thumb"/></svg></span><b>A collaboration</b><p>This is a special invite to make something with Yogibo. The brief is the only ask.</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= FIVE STEPS: GLASS BANNERS ================= -->
+<section class="yv-steps yv-dark" id="steps">
+  <div class="yv-in">
+    <div class="yv-sechead">
+      <p class="yv-eyebrow"><span class="yv-ln"></span>Five steps<span class="yv-ln"></span></p>
+      <h2 class="yv-h2">Invitation to <em>post.</em></h2>
+    </div>
+    <ol class="yv-slist" id="slist">
+      <li class="yv-st yv-glassd"><span class="yv-n">01</span><span class="yv-ico"><svg><use href="#i-mail"/></svg></span><h3>The invitation</h3><p>A code reaches you from the Yogibo marketing team. We've been watching your work for a while. Nobody applies.</p></li>
+      <li class="yv-st yv-glassd"><span class="yv-n">02</span><span class="yv-ico"><svg><use href="#i-bag"/></svg></span><h3>The selection</h3><p>Your code carries a credit. Choose from the line until it's spent: one Max, or a Midi, a Support and a spare cover.</p></li>
+      <li class="yv-st yv-glassd"><span class="yv-n">03</span><span class="yv-ico"><svg><use href="#i-pen"/></svg></span><h3>Sign the agreement</h3><p>Read the agreement and your brief on this page and type your name.</p></li>
+      <li class="yv-st yv-glassd"><span class="yv-n">04</span><span class="yv-ico"><svg><use href="#i-truck"/></svg></span><h3>We ship it</h3><p>Your selection leaves the warehouse within 5–7 business days. Tracking goes to your email.</p></li>
+      <li class="yv-st yv-glassd"><span class="yv-n">05</span><span class="yv-ico"><svg><use href="#i-cam"/></svg></span><h3>You post</h3><p>Your deliverables and brief are set with your invitation and shown before you sign. Post within the agreed window and tag @yogibobags on Instagram and TikTok.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= YOUR INVITATION ================= -->
+<section class="yv-sec yv-flow yv-locked" id="flow">
+  <div class="yv-in">
+    <div class="yv-sechead">
+      <p class="yv-eyebrow"><span class="yv-ln"></span>Your invitation<span class="yv-ln"></span></p>
+      <h2 class="yv-h2">Select, sign, <em>ship.</em></h2>
+      <p class="yv-lede" id="flowLede">Three banners. They open with your code and stack as you go.</p>
+    </div>
+
+    <form id="giftForm" novalidate>
+      <input type="hidden" name="creator" id="fCreator"><input type="hidden" name="invite_code" id="fCode"><input type="hidden" name="credit" id="fCredit"><input type="hidden" name="picks" id="fPicks"><input type="hidden" name="pick_total" id="fTotal">
+      <div class="yv-stack" id="stack">
+
+        <div class="yv-card yv-glassd" id="pick">
+          <div class="yv-card-head"><div class="yv-t"><span class="yv-n">01</span><h3>The selection</h3></div><span class="yv-lockmsg"><span class="yv-ico"><svg><use href="#i-lock"/></svg></span>Opens with your code</span><div class="yv-st2"><span class="yv-micro">Credit left</span><b id="creditLeft">$—</b></div></div>
+          <div class="yv-card-wrap"><div><div class="yv-card-body">
+            <p class="yv-card-sub">Tap to add. Keep going until your credit is spent. Anything that no longer fits goes grey.</p>
+            <div class="yv-grid" id="grid"></div>
+            <div class="yv-picksum"><span class="yv-muted" id="pickCount">Nothing selected yet</span><span>Total <b id="pickTotal">$0</b></span></div>
+          </div></div></div>
+        </div>
+
+        <div class="yv-card yv-glassd" id="sign">
+          <div class="yv-card-head"><div class="yv-t"><span class="yv-n">02</span><h3>Brief &amp; agreement</h3></div><span class="yv-lockmsg"><span class="yv-ico"><svg><use href="#i-lock"/></svg></span>Set for your invitation</span><div class="yv-st2"><span class="yv-micro">Status</span><b id="signState">Unsigned</b></div></div>
+          <div class="yv-card-wrap"><div><div class="yv-card-body yv-sign">
+            <div>
+              <p class="yv-card-sub">Your brief and deliverables. Set for your invitation and the campaign it's part of.</p>
+              <ol class="yv-dl" id="dl"></ol>
+              <p class="yv-dl-note">Disclose the gift on every post (#gifted). You keep ownership of your content; Yogibo may repost it with credit for 12 months.</p>
+            </div>
+            <div>
+              <div class="yv-agree">
+                <div class="yv-agree-top">
+                  <div class="yv-t"><span class="yv-ico"><svg><use href="#i-pen"/></svg></span><div><h4>Yogibo VIP Creator Agreement</h4><p>Six short sections. About two minutes.</p><p class="yv-read" id="readState"></p></div></div>
+                  <button class="yv-btn-ghost" type="button" id="openAgree">Read the agreement</button>
+                </div>
+                <div class="yv-agree-foot">
+                  <label class="yv-check off" id="agreeLbl"><input type="checkbox" id="agree" name="agreed" disabled> I have read the agreement and my brief, and I agree to them.</label>
+                  <div class="yv-sigrow">
+                    <div class="yv-field"><label for="sig">Type your full name to sign</label><input class="yv-sig-in" id="sig" name="signature" placeholder="Your name" autocomplete="name"></div>
+                    <div class="yv-field"><label for="sigDate">Date</label><input id="sigDate" name="signed_on" readonly></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div></div></div>
+        </div>
+
+        <div class="yv-card yv-glassd" id="ship">
+          <div class="yv-card-head"><div class="yv-t"><span class="yv-n">03</span><h3>Where it goes</h3></div><span class="yv-lockmsg"><span class="yv-ico"><svg><use href="#i-lock"/></svg></span>Address and order summary</span><div class="yv-st2"><span class="yv-micro">Shipping</span><b id="shipState">Incomplete</b></div></div>
+          <div class="yv-card-wrap"><div><div class="yv-card-body yv-ship">
+            <div class="yv-fields">
+              <div class="yv-field s3"><label for="handle">Main handle</label><input id="handle" name="handle" placeholder="@yourhandle"></div>
+              <div class="yv-field s3"><label for="email">Email for tracking</label><input id="email" name="email" type="email" placeholder="you@email.com" autocomplete="email"></div>
+              <div class="yv-field"><label for="addr1">Street address</label><input id="addr1" name="address1" autocomplete="address-line1" placeholder="Street, apt or unit"></div>
+              <div class="yv-field s3"><label for="city">City</label><input id="city" name="city" autocomplete="address-level2"></div>
+              <div class="yv-field s2"><label for="state">State</label><input id="state" name="state" autocomplete="address-level1" placeholder="CA"></div>
+              <div class="yv-field s1"><label for="zip">ZIP</label><input id="zip" name="zip" autocomplete="postal-code" inputmode="numeric"></div>
+              <div class="yv-field"><label for="notes">Colour preference or delivery notes (optional)</label><input id="notes" name="notes" placeholder="e.g. Charcoal cover, gate code 4412"></div>
+            </div>
+            <aside class="yv-order" aria-label="Your order">
+              <span class="yv-micro">Your order</span>
+              <h4 id="sumName">—</h4>
+              <ul class="yv-sumlist" id="sumList"><li class="empty">Nothing selected yet</li></ul>
+              <div class="yv-sumtot"><span>Total</span><b id="sumTotal">$0</b></div>
+              <div class="yv-sumbar"><i id="sumBar"></i></div>
+              <div class="yv-sumrows"><div id="rowCredit"><span>Credit</span><b>—</b></div><div id="rowSigned"><span>Agreement</span><b>Not signed</b></div><div id="rowShip"><span>Shipping</span><b>Incomplete</b></div></div>
+              <button class="yv-btn" type="submit" id="submitBtn" disabled>Submit my order</button>
+              <p class="yv-recap" id="recap">Enter your invitation code to start.</p>
+            </aside>
+          </div></div></div>
+        </div>
+      </div>
+    </form>
+
+    <div class="yv-done yv-glassd" id="done" hidden>
+      <div><p class="yv-micro">Submitted</p><h3>You're in, <em id="doneName">creator</em>.</h3><p>The marketing team has your selection and your signed agreement. You'll get a confirmation email within a day and tracking as soon as it ships.</p></div>
+      <ol><li><i>01</i> Confirmation email · today</li><li><i>02</i> Ships · 5–7 business days</li><li><i>03</i> Post · within your agreed window</li><li><i>04</i> We send you the numbers</li></ol>
+    </div>
+
+    <!-- Creator of the month: marketing fills this once the post is live. No public numbers. Add `hidden` to #spot when there is none. -->
+    <div class="yv-spot yv-glassd" id="spot">
+      <div class="yv-spot-head"><p class="yv-eyebrow"><span class="yv-ln"></span>Creator of the month<span class="yv-tag">placeholder</span></p><span class="yv-micro">November 2026</span></div>
+      <div class="yv-spot-body">
+        <button type="button" class="yv-pola" id="pola" aria-label="Flip the photo to read the post caption">
+          <div class="yv-pola-in">
+            <div class="yv-pola-f"><div class="yv-ph"><small>Post thumbnail · 1080×1350</small></div><span class="yv-pola-cap">@cozy.games · TikTok</span></div>
+            <div class="yv-pola-b"><span class="yv-micro">Top post · caption</span><p class="yv-capt">"finally got my hands on the yogibo max and my cozy corner is complete 🛋️ unboxing + first sit, full setup tour next week #gifted @yogibobags"</p><span class="yv-pola-cap">Yogibo Max · Charcoal</span></div>
+          </div>
+        </button>
+        <div>
+          <h3>@cozy.games</h3>
+          <p class="yv-spot-sub">Kennedy · TikTok · Yogibo Max, Charcoal</p>
+          <p class="yv-spot-hint">Hover or tap the photo to read the post caption.</p>
+          <a class="yv-btn-ghost" href="https://tiktok.com/@yogibobags" target="_blank" rel="noopener">See the post</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GOOD TO KNOW ================= -->
+<section class="yv-sec yv-faq-sec" id="faq">
+  <div class="yv-in">
+    <div class="yv-sechead"><p class="yv-eyebrow"><span class="yv-ln"></span>Questions<span class="yv-ln"></span></p><h2 class="yv-h2">Good to <em>know.</em></h2><p class="yv-lede">Four things creators ask before they sign.</p></div>
+    <div class="yv-faq" id="faqList">
+      <div class="yv-q yv-glassl"><i class="yv-qrule"></i><span class="yv-qn">01</span><div><h3 class="yv-qt">How do I get a code?</h3><p>Yogibo VIP is invite only. The marketing team extends codes to creators whose work fits, and invitations are limited each season. If you'd like to be considered, use "Not invited?" in the corner of this page.</p></div></div>
+      <div class="yv-q yv-glassl"><i class="yv-qrule"></i><span class="yv-qn">02</span><div><h3 class="yv-qt">What can I choose?</h3><p>Your code carries a credit. Combine anything in the selection until it's used up: one Max, or a Midi with a Support and a spare cover.</p></div></div>
+      <div class="yv-q yv-glassl"><i class="yv-qrule"></i><span class="yv-qn">03</span><div><h3 class="yv-qt">Do you ship outside the US?</h3><p>No. Yogibo VIP ships within the US only.</p></div></div>
+      <div class="yv-q yv-glassl"><i class="yv-qrule"></i><span class="yv-qn">04</span><div><h3 class="yv-qt">When does my code expire?</h3><p>Each code is valid for the season it was issued in. The date is in your invitation and shows on this page once you open it.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CLOSE ================= -->
+<section class="yv-close yv-dark" id="close">
+  <div class="yv-close-stage" id="closeStage">
+    <div class="yv-close-bg" aria-hidden="true"></div>
+    <div class="yv-in yv-close-copy" id="closeCopy" style="width:100%">
+      <p class="yv-eyebrow c"><span class="yv-ln"></span>Not invited yet?<span class="yv-ln"></span></p>
+      <h2 class="yv-h2" id="closeH">Invitations are <em>extended,</em> not requested.</h2>
+      <p class="yv-lede">Invitations are limited each season. Tell the marketing team where to find your work.</p>
+      <div class="yv-ctarow"><button class="yv-btn" type="button" id="openReq2">Ask to be considered</button></div>
+    </div>
+  </div>
+</section>
+
+<footer class="yv-foot">
+  <i class="yv-foot-line" id="footLine" aria-hidden="true"></i>
+  <div class="yv-foot-in">
+    <img src="vip-assets/logo-dark-bg.png" alt="Yogibo">
+    <nav><a href="https://yogibo.com" target="_blank" rel="noopener">yogibo.com</a><a href="#how">How it works</a><a href="#faq">Questions</a>
+      <span class="yv-soc"><a href="https://instagram.com/yogibobags" target="_blank" rel="noopener" aria-label="Yogibo on Instagram"><svg><use href="#s-ig"/></svg></a><a href="https://tiktok.com/@yogibobags" target="_blank" rel="noopener" aria-label="Yogibo on TikTok"><svg><use href="#s-tt"/></svg></a></span>
+    </nav>
+    <span>© 2026 Yogibo · VIP Creator Program</span>
+  </div>
+</footer>
+
+<div class="yv-stickybar" id="stickybar" aria-live="polite">
+  <div class="yv-stickybar-in"><p id="barTxt"><b>By invitation only.</b> Have your code?</p><a class="yv-btn" id="barBtn" href="#code">Enter code</a></div>
+</div>
+
+<!-- music: the pill opens a Spotify embed (Sam's playlist). The iframe renders on the live site; this preview sandbox blocks third-party frames, so a note shows instead. Fallback audio (track.mp3 or generated loop) stays available via the "Preview sound" link. -->
+<audio id="track" src="vip-assets/track.mp3" loop preload="none"></audio>
+<button class="yv-music" type="button" id="music" aria-pressed="false" aria-label="Music"><span class="yv-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="lbl" id="musicLbl">Music</span></button>
+<div class="yv-spot-player" id="spPanel" aria-label="Spotify player">
+  <div class="yv-spot-player-head"><span class="yv-micro">Now playing · Spotify</span><button class="yv-modal-x" type="button" id="spX" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="yv-spot-player-body">
+    <iframe id="spFrame" title="Yogibo playlist on Spotify" data-src="https://open.spotify.com/embed/playlist/6AqH38HkW1Eyyuw6AEW6Jt?utm_source=generator&theme=0" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    <p class="yv-spot-note" id="spNote">The Yogibo playlist plays here on the live site (this preview blocks the Spotify frame). <a href="https://open.spotify.com/playlist/6AqH38HkW1Eyyuw6AEW6Jt" target="_blank" rel="noopener">Open in Spotify</a> <button type="button" id="spFallback">Preview sound</button></p>
+  </div>
+</div>
+
+<button class="yv-corner" type="button" id="openReq" aria-haspopup="dialog"><span class="yv-ico"><svg><use href="#i-mail"/></svg></span><span>Not invited?</span></button>
+<div class="yv-pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popTitle">
+  <div class="yv-pop-head"><h4 id="popTitle">Ask to be considered.</h4><button class="yv-modal-x" type="button" id="popX" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="yv-pop-body">
+    <p>Not a sign-up and not a guarantee. The marketing team screens new creators from here and extends a small number of invitations each season.</p>
+    <form class="yv-fields" id="reqForm" novalidate>
+      <div class="yv-field s3"><label for="rHandle">Main handle</label><input id="rHandle" name="handle" placeholder="@yourhandle"></div>
+      <div class="yv-field s3"><label for="rPlat">Platform</label><select id="rPlat" name="platform"><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Twitch</option><option>Other</option></select></div>
+      <div class="yv-field s3"><label for="rEmail">Email</label><input id="rEmail" name="email" type="email" placeholder="you@email.com"></div>
+      <div class="yv-field s3"><label for="rFollow">Audience size (optional)</label><input id="rFollow" name="audience" placeholder="e.g. 45K"></div>
+      <div class="yv-field"><label for="rWhy">One line on your content (optional)</label><input id="rWhy" name="about" placeholder="Cozy gaming setups, weekly room resets…"></div>
+      <div class="yv-pop-foot"><small>We read every one. We can't reply to all.</small><button class="yv-btn" type="submit" id="reqBtn">Send</button></div>
+      <div class="yv-pop-done" id="reqDone" hidden>Received. If your work is a fit, a code will find you.</div>
+    </form>
+    <p class="yv-contact">Prefer email? <code id="mailTxt">sam.mathias@yogibo.com</code><button type="button" id="copyMail">Copy</button></p>
+  </div>
+</div>
+
+<div class="yv-modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="yv-modal-bg" id="modalBg"></div>
+  <div class="yv-modal-box">
+    <div class="yv-modal-head"><h4 id="modalTitle">Yogibo VIP Creator Agreement</h4><button class="yv-modal-x" type="button" id="modalX" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="yv-modal-prog"><i id="modalProg"></i></div>
+    <div class="yv-modal-scroll" id="agreeScroll" data-lenis-prevent tabindex="0">
+      <p><span class="yv-placeholder">Placeholder · paste final text from Yogibo_VIP_Creator_Agreement_NH_5.docx</span></p>
+      <h5>1. The gift</h5><p>Yogibo will ship the products you selected at no cost to you. The gift is yours to keep whether or not the campaign continues.</p>
+      <h5>2. Content and brief</h5><p>You agree to create and publish the deliverables listed on this page, following the creative brief in your invitation, within the window stated there and counted from confirmed delivery. The brief sets the campaign direction; the style is yours.</p>
+      <h5>3. Disclosure</h5><p>You will disclose the gift in each post as required by the FTC Endorsement Guides and your platform's branded-content rules.</p>
+      <h5>4. Usage rights</h5><p>You grant Yogibo a non-exclusive, worldwide licence for 12 months from each post's publish date to repost, embed and promote that content, with credit to your handle. You retain ownership.</p>
+      <h5>5. Term and ending it</h5><p>Either side can end this agreement in writing. If you have received product but not yet posted, we ask that you complete the deliverables or return the product.</p>
+      <h5>6. Nothing else</h5><p>This is the entire agreement. No exclusivity, no non-compete, no minimum follower requirement, no penalties.</p>
+      <p><em>That's the end. Close this window and tick the box to sign.</em></p>
+    </div>
+    <div class="yv-modal-foot"><p class="yv-scrollhint" id="scrollHint">↓ Scroll to the end to enable signing</p><button class="yv-btn" type="button" id="modalDone" disabled>I've read it</button></div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap=!!(window.gsap&&window.ScrollTrigger)&&!reduce;
+
+  // ---- invite codes = gift cards: value, expiry, brief + deliverables. Replace with the lookup endpoint. ----
+  var CODES={
+    'YOGI-400':{name:'Kennedy',credit:400,expires:'Dec 31, 2026',dl:[['Campaign: Cozy Season','Brief: your winter reset — Yogibo as the centre of the room'],['1 TikTok, Yogibo in use','15 seconds or longer, your edit'],['1 Story set on delivery day','Unboxing or first sit'],['Post within 21 days of delivery','Counted from the day tracking says delivered'],['Tag @yogibobags · #gifted','So we can find and repost it']]},
+    'YOGI-650':{name:'Rachel',credit:650,expires:'Dec 31, 2026',dl:[['Campaign: Holiday 26','Brief: gifting moment — the Yogibo under the tree, first sit on the day'],['1 Instagram Reel, Yogibo in use','15 seconds or longer, your edit'],['2 Stories','Unboxing, first sit, or a day-in-the-life moment'],['Post within 30 days of delivery','Counted from the day tracking says delivered'],['Tag @yogibobags · #gifted','So we can find and repost it']]},
+    'YOGI-900':{name:'Katy',credit:900,expires:'Jan 31, 2027',dl:[['Campaign: Setup Tour','Brief: your real streaming setup with Yogibo in the seat'],['1 YouTube integration, 60 seconds or longer','Yogibo in your real setup'],['1 Reel or TikTok cut-down','From the same shoot is fine'],['2 Stories','Unboxing and first sit'],['Post within 45 days of delivery','Counted from the day tracking says delivered'],['Tag @yogibobags · #gifted','On every post']]}
+  };
+  var PRODUCTS=[
+    {id:'max',name:'Yogibo Max',price:299,dims:'6 ft · the big one'},{id:'midi',name:'Yogibo Midi',price:229,dims:'4.5 ft · fits anywhere'},{id:'mini',name:'Yogibo Mini',price:149,dims:'Side seat'},{id:'short',name:'Yogibo Short',price:199,dims:'Chair-sized'},{id:'lounger',name:'Yogibo Lounger',price:199,dims:'Low-back lounge'},{id:'pod',name:'Yogibo Pod',price:219,dims:'Round + upright'},{id:'support',name:'Yogibo Support',price:99,dims:'Backrest add-on'},{id:'moon',name:'Moon Pillow',price:59,dims:'Round cushion'},{id:'rollmax',name:'Roll Max',price:129,dims:'Full-body roll'},{id:'rollmidi',name:'Roll Midi',price:99,dims:'Mid-size roll'},{id:'rollmini',name:'Roll Mini',price:69,dims:'Small roll'},{id:'zoolamax',name:'Zoola Max',price:349,dims:'Outdoor · 6 ft'},{id:'zoolamidi',name:'Zoola Midi',price:279,dims:'Outdoor · 4.5 ft'},{id:'zoolapod',name:'Zoola Pod',price:259,dims:'Outdoor · round'},{id:'cover',name:'Extra Cover',price:89,dims:'Second colour, any bag'}
+  ];
+
+  var flow=$('flow'),grid=$('grid'),lenis=null;
+  var state={unlocked:false,name:'',code:'',credit:0,expires:'',dl:[],picks:{},read:false,submitted:false};
+
+  PRODUCTS.forEach(function(p){
+    var el=document.createElement('button');el.type='button';el.className='yv-prod';el.dataset.id=p.id;el.setAttribute('aria-pressed','false');
+    el.innerHTML='<span class="yv-chk" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><div class="yv-ph"><small>'+p.name+' · photo 800×600</small></div><h4>'+p.name+'</h4><div class="yv-pm"><span>'+p.dims+'</span><b>$'+p.price+'</b></div><span class="yv-nofit">Over your credit</span>';
+    el.addEventListener('click',function(){if(!state.unlocked)return;if(state.picks[p.id])delete state.picks[p.id];else{if(total()+p.price>state.credit){nudge(el);return;}state.picks[p.id]=p;}render();});
+    grid.appendChild(el);
+  });
+  function nudge(el){if(hasGsap)gsap.fromTo(el,{x:-4},{x:0,duration:.4,ease:'elastic.out(1,.3)'});}
+  function total(){var t=0;for(var k in state.picks)t+=state.picks[k].price;return t;}
+  function fmt(n){return '$'+n.toLocaleString('en-US');}
+  var shown=null;
+  function tween(el,to){if(!hasGsap||shown===null){el.textContent=fmt(to);shown=to;return;}var o={v:shown};gsap.to(o,{v:to,duration:.6,ease:'power2.out',onUpdate:function(){el.textContent=fmt(Math.round(o.v));}});shown=to;}
+
+  function render(){
+    var t=total(),left=state.credit-t,n=Object.keys(state.picks).length;
+    var cl=$('creditLeft');if(state.unlocked)tween(cl,left);else cl.textContent='$—';cl.classList.toggle('ok',state.unlocked&&left>=0);
+    $('pickTotal').textContent=fmt(t);$('pickCount').textContent=n?n+' item'+(n>1?'s':'')+' selected':'Nothing selected yet';
+    grid.querySelectorAll('.yv-prod').forEach(function(el){var p=PRODUCTS.filter(function(x){return x.id===el.dataset.id;})[0],sel=!!state.picks[p.id];el.classList.toggle('sel',sel);el.setAttribute('aria-pressed',sel?'true':'false');el.classList.toggle('nofit',!sel&&state.unlocked&&t+p.price>state.credit);});
+    $('fPicks').value=Object.keys(state.picks).map(function(k){return state.picks[k].name;}).join(', ');$('fTotal').value=t;
+    var list=$('sumList');list.innerHTML='';
+    if(!n)list.innerHTML='<li class="empty">Nothing selected yet</li>';else for(var k in state.picks){var li=document.createElement('li');li.innerHTML='<span>'+state.picks[k].name+'</span><b>'+fmt(state.picks[k].price)+'</b>';list.appendChild(li);}
+    $('sumTotal').textContent=fmt(t);$('sumBar').style.transform='scaleX('+(state.credit?Math.min(1,t/state.credit):0)+')';
+    $('sumName').textContent=state.unlocked?state.name:'—';$('rowCredit').innerHTML='<span>Credit</span><b>'+(state.unlocked?fmt(state.credit):'—')+'</b>';
+    validate();updBar();
+  }
+
+  var bar=$('stickybar'),barTxt=$('barTxt'),barBtn=$('barBtn'),codeSeen=true;
+  function updBar(){
+    if(state.unlocked){barTxt.innerHTML='<b>'+fmt(state.credit-total())+'</b> credit left of '+fmt(state.credit);barBtn.textContent='Go to selection';barBtn.href='#pick';}
+    else{barTxt.innerHTML='<b>By invitation only.</b> Have your code?';barBtn.textContent='Enter code';barBtn.href='#code';}
+    var on=!codeSeen&&!state.submitted;bar.classList.toggle('on',on);$('openReq').classList.toggle('lift',on);$('music').classList.toggle('lift',on);if(window.yvLiftPlayer)window.yvLiftPlayer(on);
+  }
+  if('IntersectionObserver' in window)new IntersectionObserver(function(en){codeSeen=en[0].isIntersecting;updBar();},{threshold:.2}).observe($('glass'));
+
+  var glass=$('glass');
+  $('codeForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var v=$('codeInput').value.trim().toUpperCase(),hint=$('codeHint'),c=CODES[v];
+    if(!c){hint.className='yv-hint err';hint.textContent=v?'That code isn\'t on the list. Check your invitation.':'Type the code from your invitation.';glass.classList.remove('shake');void glass.offsetWidth;glass.classList.add('shake');return;}
+    state.unlocked=true;state.code=v;state.name=c.name;state.credit=c.credit;state.expires=c.expires;state.dl=c.dl;state.picks={};shown=null;
+    $('letName').textContent='Welcome, '+c.name+'.';$('letCredit').textContent=fmt(c.credit);$('letDl').textContent=c.dl.length-1;$('letExp').textContent=c.expires;
+    $('fCreator').value=c.name;$('fCode').value=v;$('fCredit').value=c.credit;
+    glass.classList.add('open');
+    var dl=$('dl');dl.innerHTML='';
+    c.dl.forEach(function(d,i){var li=document.createElement('li');li.innerHTML='<span class="yv-dn">'+(i===0?'★':String(i).padStart(2,'0'))+'</span><span class="yv-dt">'+d[0]+'<small>'+d[1]+'</small></span>';dl.appendChild(li);});
+    $('flowLede').textContent='Opened for '+c.name+' · code '+v+' · valid until '+c.expires+'.';
+    setTimeout(function(){flow.classList.remove('yv-locked');if(hasGsap){gsap.from('#dl li',{y:16,opacity:0,duration:.6,stagger:.08,ease:'power3.out',delay:.5});gsap.from('.yv-prod',{y:24,opacity:0,duration:.6,stagger:.03,ease:'power3.out',delay:.3});setTimeout(function(){ScrollTrigger.refresh();},1000);}render();},900);
+    setTimeout(function(){scrollTo('#flow');},1100);
+  });
+
+  var modal=$('modal'),sc=$('agreeScroll');
+  function openModal(){modal.hidden=false;document.body.style.overflow='hidden';if(lenis)lenis.stop();sc.scrollTop=0;checkScroll();setTimeout(function(){sc.focus();},50);}
+  function closeModal(){modal.hidden=true;document.body.style.overflow='';if(lenis)lenis.start();$('openAgree').focus();}
+  function checkScroll(){var max=sc.scrollHeight-sc.clientHeight,p=max>0?sc.scrollTop/max:1;$('modalProg').style.width=(p*100)+'%';
+    if(p>=.98&&!state.read){state.read=true;$('modalDone').disabled=false;var h=$('scrollHint');h.textContent='✓ Read to the end.';h.classList.add('done');$('agree').disabled=false;$('agreeLbl').classList.remove('off');$('readState').textContent='Read ✓';$('openAgree').textContent='Read again';validate();}}
+  sc.addEventListener('scroll',checkScroll);
+  $('openAgree').addEventListener('click',openModal);$('modalX').addEventListener('click',closeModal);$('modalBg').addEventListener('click',closeModal);
+  $('modalDone').addEventListener('click',function(){closeModal();$('agree').checked=true;validate();});
+
+  var pop=$('pop');
+  function openPop(){pop.classList.add('on');setTimeout(function(){$('rHandle').focus();},300);}
+  function closePop(){pop.classList.remove('on');}
+  $('openReq').addEventListener('click',function(){pop.classList.contains('on')?closePop():openPop();});
+  $('pola').addEventListener('click',function(){this.classList.toggle('flip');});
+  $('openReq2').addEventListener('click',openPop);$('popX').addEventListener('click',closePop);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(!modal.hidden)closeModal();closePop();}});
+  $('reqForm').addEventListener('submit',function(e){e.preventDefault();if(!$('rHandle').value.trim()||!$('rEmail').value.trim()){nudge($('reqForm'));return;}$('reqDone').hidden=false;$('reqBtn').disabled=true;$('reqBtn').textContent='Sent';});
+
+  document.querySelectorAll('.yv-mi').forEach(function(b){b.addEventListener('click',function(){var on=b.classList.toggle('on');document.querySelectorAll('.yv-mi.on').forEach(function(o){if(o!==b)o.classList.remove('on');});});});
+
+  $('sigDate').value=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  var form=$('giftForm');
+  ['agree','sig','handle','email','addr1','city','state','zip'].forEach(function(id){$(id).addEventListener('input',validate);$(id).addEventListener('change',validate);});
+  function val(id){return $(id).value.trim();}
+  function validate(){
+    var n=Object.keys(state.picks).length,agreed=$('agree').checked,sig=val('sig').length>1;
+    var ship=val('handle')&&val('email')&&val('addr1')&&val('city')&&val('state')&&val('zip');
+    var ok=state.unlocked&&n>0&&agreed&&sig&&ship;$('submitBtn').disabled=!ok;
+    var signed=agreed&&sig;
+    $('signState').textContent=signed?'Signed':'Unsigned';$('signState').classList.toggle('ok',signed);
+    $('shipState').textContent=ship?'Complete':'Incomplete';$('shipState').classList.toggle('ok',!!ship);
+    var rs=$('rowSigned');rs.className=signed?'ok':'';rs.innerHTML='<span>Agreement</span><b>'+(signed?'Signed · '+val('sig'):'Not signed')+'</b>';
+    var rsh=$('rowShip');rsh.className=ship?'ok':'';rsh.innerHTML='<span>Shipping</span><b>'+(ship?'Complete':'Incomplete')+'</b>';
+    var r=$('recap');
+    if(!state.unlocked)r.textContent='Enter your invitation code to start.';else if(!n)r.textContent='Select at least one product in banner 01.';else if(!signed)r.textContent='Read and sign the agreement in banner 02.';else if(!ship)r.textContent='Fill in your shipping details.';else r.textContent='Everything\'s in. Submit when you\'re ready.';
+  }
+  form.addEventListener('submit',function(e){e.preventDefault();if($('submitBtn').disabled)return;state.submitted=true;updBar();form.hidden=true;$('doneName').textContent=val('sig').split(' ')[0]||state.name;$('done').hidden=false;if(hasGsap)ScrollTrigger.refresh();setTimeout(function(){scrollTo('#done');},50);});
+
+  $('copyMail').addEventListener('click',function(){var t=$('mailTxt').textContent,b=this;function ok(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy';},1600);}function sel(){var r=document.createRange();r.selectNodeContents($('mailTxt'));var s=getSelection();s.removeAllRanges();s.addRange(r);}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,sel);else sel();});
+
+  var heroST=null;
+  function scrollTo(sel){
+    var el=document.querySelector(sel);if(!el)return;
+    if((sel==='#code'||sel==='#top')&&heroST){var y=sel==='#top'?0:heroST.end-8;if(lenis)lenis.scrollTo(y,{duration:1.1});else window.scrollTo({top:y,behavior:reduce?'auto':'smooth'});return;}
+    if(lenis)lenis.scrollTo(el,{offset:-84,duration:1.1});else el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  }
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){var id=a.getAttribute('href');if(id.length>1&&document.querySelector(id)){e.preventDefault();scrollTo(id);}});});
+
+  // ---- music: licensed MP3 first; generated 92-bpm jazz-hop loop while the file is missing ----
+  (function(){
+    var btn=$('music'),audio=$('track'),ctx=null,g=null,timer=null,on=false,useSynth=false;
+    var BPM=92,BEAT=60/BPM,SW=.1;
+    var CH=[[62,65,69,72,76],[55,59,62,65,76],[60,64,67,71,74],[57,60,64,67,71]];
+    var BASS=[[38,38,45,41],[43,43,50,47],[36,36,43,40],[33,33,40,36]];
+    function hz(m){return 440*Math.pow(2,(m-69)/12);}
+    function noiseBuf(){var b=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate),d=b.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;return b;}
+    function keys(m,t,dur,vel){var o=ctx.createOscillator(),o2=ctx.createOscillator(),e=ctx.createGain(),g2=ctx.createGain();o.type='sine';o2.type='triangle';o.frequency.value=hz(m);o2.frequency.value=hz(m)*2.001;g2.gain.value=.12;o2.connect(g2);g2.connect(e);o.connect(e);e.connect(g.keys);e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(vel,t+.015);e.gain.exponentialRampToValueAtTime(vel*.3,t+.4);e.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);}
+    function sub(m,t,dur){var o=ctx.createOscillator(),e=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(hz(m)*1.5,t);o.frequency.exponentialRampToValueAtTime(hz(m),t+.06);o.connect(e);e.connect(g.bass);e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(.6,t+.01);e.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o.stop(t+dur+.05);}
+    function hat(t,vel,open){var s=ctx.createBufferSource();s.buffer=g.noise;var f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=7000;var e=ctx.createGain();s.connect(f);f.connect(e);e.connect(g.drums);e.gain.setValueAtTime(vel,t);e.gain.exponentialRampToValueAtTime(.0001,t+(open?.22:.05));s.start(t);s.stop(t+.25);}
+    function snare(t){var s=ctx.createBufferSource();s.buffer=g.noise;var f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=1800;var e=ctx.createGain();s.connect(f);f.connect(e);e.connect(g.drums);e.gain.setValueAtTime(.28,t);e.gain.exponentialRampToValueAtTime(.0001,t+.16);s.start(t);s.stop(t+.2);}
+    function kick(t){var o=ctx.createOscillator(),e=ctx.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(42,t+.1);o.connect(e);e.connect(g.drums);e.gain.setValueAtTime(.7,t);e.gain.exponentialRampToValueAtTime(.0001,t+.22);o.start(t);o.stop(t+.25);}
+    var barN=0,next=0;
+    function scheduleBar(t){
+      var ch=CH[barN%4],bl=BASS[barN%4],e8=BEAT/2,e16=BEAT/4;
+      ch.forEach(function(m,i){keys(m,t,1.6,.06-i*.005);});
+      ch.slice(1,4).forEach(function(m){keys(m,t+BEAT*1.5,.8,.04);keys(m,t+BEAT*3+e8,.7,.035);});
+      [0,1.75,2.5].forEach(function(b,i){sub(bl[i],t+b*BEAT,BEAT*.8);});
+      kick(t);kick(t+BEAT*1.75);kick(t+BEAT*2.5);snare(t+BEAT);snare(t+BEAT*3);
+      for(var k=0;k<16;k++){var off=k%2?e16*SW:0;if(k===14){hat(t+k*e16+off,.07);hat(t+k*e16+e16/2,.05);hat(t+k*e16+e16*.75,.05);}else hat(t+k*e16+off,k%4===0?.11:(k%2?.04:.07),k===7);}
+      barN++;
+    }
+    function tick(){while(next<ctx.currentTime+.6){scheduleBar(next);next+=BEAT*4;}}
+    function startSynth(){
+      ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();ctx.resume();
+      var master=ctx.createGain(),lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=4200;master.gain.value=0;lp.connect(master);master.connect(ctx.destination);
+      g={master:master,noise:noiseBuf(),keys:ctx.createGain(),bass:ctx.createGain(),drums:ctx.createGain()};
+      g.keys.gain.value=.9;g.bass.gain.value=.7;g.drums.gain.value=.55;[g.keys,g.bass,g.drums].forEach(function(x){x.connect(lp);});
+      master.gain.linearRampToValueAtTime(.22,ctx.currentTime+1.5);
+      barN=0;next=ctx.currentTime+.1;tick();timer=setInterval(tick,200);
+    }
+    function stopSynth(){if(!g)return;clearInterval(timer);var m=g.master;m.gain.linearRampToValueAtTime(0,ctx.currentTime+1);setTimeout(function(){m.disconnect();},1200);g=null;}
+    function setUI(){btn.classList.toggle('on',on);btn.setAttribute('aria-pressed',on?'true':'false');$('musicLbl').textContent=on?'Playing':'Music';}
+    // pill → Spotify panel (embed loads on first open); "Preview sound" → fallback audio
+    var panel=$('spPanel'),frame=$('spFrame'),loaded=false;
+    // The claude.ai preview sandbox blocks third-party frames (Spotify included). Only load the embed on a real host.
+    var canEmbed=/(^|\.)(yogibovip\.com|yogibo\.com|github\.io|localhost)$/.test(location.hostname);
+    if(!canEmbed){frame.hidden=true;$('spNote').innerHTML='Spotify\'s player is blocked inside this preview, so for now: <a href="https://open.spotify.com/playlist/6AqH38HkW1Eyyuw6AEW6Jt" target="_blank" rel="noopener">Open the Yogibo playlist in Spotify</a>. On yogibovip.com it plays right here. <button type="button" id="spFallback">Preview sound</button>';}
+    btn.addEventListener('click',function(){
+      var open=panel.classList.toggle('on');
+      if(open&&canEmbed&&!loaded){frame.src=frame.dataset.src;loaded=true;}
+    });
+    $('spX').addEventListener('click',function(){panel.classList.remove('on');});
+    $('spFallback').addEventListener('click',function(){
+      on=!on;setUI();
+      if(!on){if(useSynth)stopSynth();else{audio.pause();}return;}
+      if(useSynth){startSynth();return;}
+      audio.volume=.6;var p=audio.play();
+      if(p&&p.catch)p.catch(function(){useSynth=true;startSynth();});
+    });
+    audio.addEventListener('error',function(){useSynth=true;if(on&&!g)startSynth();});
+    window.yvLiftPlayer=function(l){panel.classList.toggle('lift',l);};
+  })();
+
+  render();
+
+  // ================= MOTION =================
+  var pre=$('pre');
+  if(!hasGsap){pre.remove();document.querySelector('.yv-hero').classList.add('yv-static');$('maskText').setAttribute('font-size','9000');$('maskRect').style.opacity='0';document.querySelectorAll('.yv-qrule').forEach(function(r){r.style.transform='scaleX(1)';});$('wm').style.opacity='.14';$('footLine').style.transform='scaleX(1)';return;}
+  gsap.registerPlugin(ScrollTrigger);
+  if(window.Lenis){
+    lenis=new Lenis({lerp:.09,wheelMultiplier:.9});lenis.on('scroll',ScrollTrigger.update);gsap.ticker.add(function(t){if(lenis)lenis.raf(t*1000);});gsap.ticker.lagSmoothing(0);
+    // watchdog: if the wheel is being swallowed but the page isn't moving, hand scrolling back to the browser
+    var wAcc=0,wY=scrollY,wT=null;
+    window.addEventListener('wheel',function(e){
+      if(!lenis||e.deltaY<=0)return;wAcc+=e.deltaY;
+      clearTimeout(wT);wT=setTimeout(function(){
+        var max=document.documentElement.scrollHeight-innerHeight;
+        if(wAcc>500&&Math.abs(scrollY-wY)<2&&scrollY<max-4){try{lenis.destroy();}catch(x){}lenis=null;document.documentElement.classList.remove('lenis','lenis-smooth','lenis-scrolling','lenis-stopped');document.documentElement.style.scrollBehavior='smooth';}
+        wAcc=0;wY=scrollY;
+      },450);
+    },{passive:true});
+  }
+
+  var pn={v:0},isDesk=window.innerWidth>=861;
+  var intro=gsap.timeline({paused:true}).from('#maskText',{attr:{'font-size':80},duration:1.4,ease:'power3.out'});
+  if(!isDesk){intro.to('#maskText',{attr:{'font-size':9000},duration:1.6,ease:'power2.in'},'+=.4').to('#maskRect',{opacity:0,duration:.5},'-=.5').to('.yv-hero-in',{opacity:1,duration:.6},'-=.5').from('.yv-hero .yv-eyebrow, .yv-hero .yv-line, .yv-hero-lede, #glass',{y:34,opacity:0,duration:1.1,ease:'power3.out',stagger:.1,clearProps:'transform'},'-=.4');}
+  gsap.timeline()
+    .to(pn,{v:100,duration:1.2,ease:'power2.inOut',onUpdate:function(){$('preBar').style.transform='scaleX('+(pn.v/100)+')';$('preN').textContent=String(Math.round(pn.v)).padStart(2,'0');}})
+    .to(pre,{yPercent:-100,duration:.9,ease:'power4.inOut',onComplete:function(){pre.remove();}},'+=.1')
+    .add(function(){intro.play();},'-=.6');
+  setTimeout(function(){var p=$('pre');if(p)p.remove();},4500);   // never let the preloader stick
+  if(isDesk){
+    var heroTl=gsap.timeline({scrollTrigger:{trigger:'.yv-hero',start:'top top',end:'+=120%',pin:true,scrub:.5,anticipatePin:1}})
+      .fromTo('#maskText',{attr:{'font-size':220}},{attr:{'font-size':9000},ease:'power2.in',duration:1})
+      .to('#maskRect',{opacity:0,duration:.3},'-=.35')
+      .to('.yv-hero-in',{opacity:1,duration:.35},'-=.2');
+    heroST=heroTl.scrollTrigger;
+    // if nobody scrolls within a few seconds, open the mask for them (scrolls through the pinned stretch)
+    setTimeout(function(){if(scrollY<10&&heroST){var y=heroST.end-8;if(lenis)lenis.scrollTo(y,{duration:2.6});else window.scrollTo({top:y,behavior:'smooth'});}},5000);
+  }
+
+  gsap.to('#prog',{scaleX:1,ease:'none',scrollTrigger:{start:0,end:'max',scrub:.3}});
+  // VIP watermark: appears after the hero, drifts, brightens over the dark bands
+  gsap.fromTo('#wm',{yPercent:0,rotate:0,scale:1},{yPercent:-22,rotate:-5,scale:.9,ease:'none',scrollTrigger:{start:0,end:'max',scrub:1}});
+  gsap.fromTo('#wm',{opacity:0},{opacity:.14,ease:'none',scrollTrigger:{trigger:'.yv-marq',start:'top 95%',end:'top 20%',scrub:true}});
+  ['#steps','#flow','.yv-close'].forEach(function(s){gsap.to('#wm',{opacity:.34,duration:.8,scrollTrigger:{trigger:s,start:'top 70%',end:'bottom 30%',toggleActions:'play reverse play reverse'}});});
+
+  // nav re-tints over light sections
+  gsap.utils.toArray('.yv-how, .yv-faq-sec').forEach(function(s){ScrollTrigger.create({trigger:s,start:'top 70px',end:'bottom 70px',toggleClass:{targets:'#nav',className:'light'}});});
+
+  // program: word-by-word intro, perk tiles flip in, step banners slide in
+  (function(){var el=document.querySelector('.yv-intro');if(!el)return;function wrap(node){[].slice.call(node.childNodes).forEach(function(n){if(n.nodeType===3){var frag=document.createDocumentFragment();n.textContent.split(/(\s+)/).forEach(function(t){if(!t)return;if(/^\s+$/.test(t)){frag.appendChild(document.createTextNode(t));}else{var s=document.createElement('span');s.className='wd';s.textContent=t;frag.appendChild(s);}});node.replaceChild(frag,n);}else if(n.nodeType===1)wrap(n);});}wrap(el);})();
+  gsap.fromTo('.yv-intro .wd',{opacity:.12},{opacity:1,stagger:.04,ease:'none',scrollTrigger:{trigger:'.yv-intro',start:'top 85%',end:'bottom 45%',scrub:.3}});
+  gsap.from('.yv-perks li',{rotateY:-70,x:-40,opacity:0,transformOrigin:'0% 50%',duration:.9,stagger:.15,ease:'power3.out',scrollTrigger:{trigger:'#perks',start:'top 85%',once:true}});
+  gsap.utils.toArray('.yv-st').forEach(function(s,i){gsap.from(s,{x:i%2?40:-40,opacity:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:s,start:'top 88%',once:true}});});
+
+  // gifting banners stack; previous scales back as the next covers it
+  var cards=gsap.utils.toArray('.yv-card');
+  cards.forEach(function(c,i){if(i===cards.length-1)return;gsap.to(c,{scale:.96,filter:'brightness(.92)',ease:'none',scrollTrigger:{trigger:cards[i+1],start:'top bottom-=40',end:'top top+=140',scrub:true}});});
+  gsap.from('.yv-card',{y:40,opacity:0,duration:.9,stagger:.12,ease:'power3.out',scrollTrigger:{trigger:'#stack',start:'top 85%',once:true}});
+  gsap.utils.toArray('.yv-sechead, .yv-spot').forEach(function(el){gsap.from(el,{y:40,opacity:0,duration:.9,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 88%',once:true}});});
+  gsap.from('#pola',{y:40,rotate:6,opacity:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:'#spot',start:'top 80%',once:true}});
+
+  // good to know: tiles land, rules draw, answers type out
+  gsap.from('.yv-q',{y:30,opacity:0,duration:.8,stagger:.14,ease:'power3.out',scrollTrigger:{trigger:'#faqList',start:'top 82%',once:true}});
+  gsap.to('.yv-qrule',{scaleX:1,duration:1.1,stagger:.14,ease:'power3.inOut',scrollTrigger:{trigger:'#faqList',start:'top 82%',once:true}});
+  gsap.utils.toArray('.yv-q p').forEach(function(p){var full=p.textContent;p.textContent='';var tn=document.createTextNode(''),cur=document.createElement('i');cur.className='cur';p.appendChild(tn);p.appendChild(cur);
+    ScrollTrigger.create({trigger:p,start:'top 88%',once:true,onEnter:function(){var i=0;(function tk(){if(i<=full.length){tn.textContent=full.slice(0,i);i++;setTimeout(tk,full.length>160?8:13);}else{setTimeout(function(){cur.remove();},1200);}})();}});});
+
+  // closing: letters + footer hairline
+  (function split(){var h=$('closeH'),out='';h.childNodes.forEach(function(nd){var txt=nd.textContent,em=nd.nodeName==='EM';txt.split(' ').forEach(function(w,wi,arr){if(!w)return;var chars=w.split('').map(function(c){return '<span class="ch">'+c+'</span>';}).join('');out+=(em?'<em class="w">':'<span class="w">')+chars+(em?'</em>':'</span>')+(wi<arr.length-1||txt.slice(-1)===' '?' ':'');});});h.innerHTML=out;})();
+  gsap.from('#closeH .ch',{yPercent:110,opacity:0,rotateX:-40,duration:.9,stagger:.018,ease:'power3.out',scrollTrigger:{trigger:'#closeStage',start:'top 75%',once:true}});
+  gsap.to('#footLine',{scaleX:1,duration:1.4,ease:'power3.inOut',scrollTrigger:{trigger:'#footLine',start:'top 95%',once:true}});
+
+  new MutationObserver(function(){ScrollTrigger.refresh();}).observe(flow,{attributes:true,attributeFilter:['class','hidden'],subtree:true});
+  window.addEventListener('load',function(){ScrollTrigger.refresh();});
+})();
+</script>
+
+</body>
+</html>
